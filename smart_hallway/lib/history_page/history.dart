@@ -1,0 +1,249 @@
+import 'package:app_bar_with_search_switch/app_bar_with_search_switch.dart';
+import 'package:flutter/material.dart';
+import 'package:expansion_tile_card/expansion_tile_card.dart';
+import 'package:smart_hallway/model/history_item.dart';
+import '../history_page/save.dart';
+
+class HistoryPage extends StatefulWidget {
+  const HistoryPage({super.key});
+
+  @override
+  State<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+  // hardcoded datalist
+  List<HistoryItem> _items = List<HistoryItem>.generate(
+      50,
+      (index) => HistoryItem(
+          trialId: index,
+          comment: "this is hardcoded",
+          fileName: index.toString() + " test"));
+
+  List<HistoryItem> savedList = List.empty(growable: true);
+
+  List<HistoryItem> resultList = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    resultList = List.from(_items);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBarWithSearchSwitch(
+            onChanged: (text) {
+              filterItems(text);
+            },
+            backgroundColor: Colors.green,
+            fieldHintText: 'Search by trial name',
+            appBarBuilder: (context) {
+              return AppBar(
+                centerTitle: true,
+                title: const Text('Smart Hallway'),
+                backgroundColor: Colors.green,
+                actions: const [
+                  AppBarSearchButton(),
+                ],
+              );
+            }),
+        bottomNavigationBar: BottomAppBar(
+          color: Colors.green,
+          shape: const CircularNotchedRectangle(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              IconButton(
+                icon: Icon(Icons.star),
+                color: Colors.white,
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => savedPage(
+                            savedList: savedList,
+                            resultList: resultList,
+                            parentDelete: _remove,
+                            parentUnsave: _unsave,
+                          )));
+                },
+              ),
+              // SizedBox(),
+              PopupMenuButton(
+                  icon: Icon(Icons.sort_sharp),
+                  color: Colors.white,
+                  offset: Offset(500, 500),
+                  onSelected: (result) {
+                    sort(result);
+                  },
+                  itemBuilder: (BuildContext context) => const <PopupMenuEntry>[
+                        PopupMenuItem(
+                          value: 0,
+                          child: Text('Time: Old to New'),
+                        ),
+                        PopupMenuItem(
+                          value: 1,
+                          child: Text('Time: New to old'),
+                        ),
+                        PopupMenuItem(
+                          value: 2,
+                          child: Text('Trial Id: Low to High'),
+                        ),
+                        PopupMenuItem(
+                          value: 3,
+                          child: Text('Trial Id: High to Low'),
+                        ),
+                        PopupMenuItem(value: 4, child: Text('None'))
+                      ]),
+            ],
+          ),
+        ),
+        body: ListView.separated(
+            itemCount: resultList.length,
+            separatorBuilder: (_, index) {
+              return Divider(color: Colors.grey.shade400);
+            },
+            itemBuilder: (_, index) {
+              final item = resultList[index];
+              return ExpansionTileCard(
+                title: Text(item.fileName),
+                children: [
+                  const Divider(
+                    thickness: 1.0,
+                    height: 1.0,
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Text('Trial Id: ' + item.trialId.toString())),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Text(
+                            "Recorded Time: " + item.trialTime.toString())),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Text("Comment: " + item.comment.toString())),
+                  ),
+                  ButtonBar(
+                    alignment: MainAxisAlignment.spaceAround,
+                    buttonPadding: EdgeInsets.all(0),
+                    children: [
+                      item.saved
+                          ? _createButton("Unsave", item.trialId)
+                          : _createButton("Save", item.trialId),
+                      _createButton("Report", item.trialId),
+                      _createButton("Delete", item.trialId),
+                    ],
+                  )
+                ],
+              );
+            }));
+  }
+
+  Widget _createButton(String type, int trialId) {
+    IconData icon = type == 'Save'
+        ? Icons.star_border
+        : type == 'Unsave'
+            ? Icons.star
+            : type == 'Report'
+                ? Icons.my_library_books
+                : Icons.delete_forever;
+
+    return TextButton(
+      onPressed: () {
+        if (type == 'Delete') {
+          _remove(trialId);
+        } else if (type == 'Save') {
+          setState(() {
+            _save(trialId);
+          });
+        } else if (type == 'Unsave') {
+          setState(() {
+            _unsave(trialId);
+          });
+        } else {
+          _fetchReport(trialId);
+        }
+      },
+      child: Column(
+        children: <Widget>[
+          Icon(icon),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 2.0),
+          ),
+          Text(type),
+        ],
+      ),
+    );
+  }
+
+  _remove(int trialId) {
+    setState(() {
+      savedList.removeWhere((element) => element.trialId == trialId);
+      resultList.removeWhere((element) => element.trialId == trialId);
+      _items.removeWhere((element) => element.trialId == trialId);
+    });
+  }
+
+  _save(int trialId) {
+    for (var item in _items) {
+      if (item.trialId == trialId) {
+        item.saved = true;
+        savedList.add(item);
+      }
+    }
+  }
+
+  _unsave(int trialId) {
+    setState(() {
+      for (var item in _items) {
+        if (item.trialId == trialId) {
+          item.saved = false;
+          savedList.removeWhere((e) => e.trialId == trialId);
+        }
+      }
+    });
+  }
+
+  _fetchReport(int trialId) {
+    print("Report is downloaded and ready to be viewed.");
+  }
+
+  void filterItems(String text) {
+    print(_items.contains('1 test'));
+    resultList =
+        _items.where((element) => element.fileName.contains(text)).toList();
+    setState(() {});
+  }
+
+  sort(int type) {
+    setState(() {
+      switch (type) {
+        case 0:
+          resultList.sort((a, b) => a.trialTime.compareTo(b.trialTime));
+          break;
+        case 1:
+          resultList.sort((b, a) => a.trialTime.compareTo(b.trialTime));
+          break;
+        case 2:
+          resultList.sort((a, b) => a.trialId.compareTo(b.trialId));
+          break;
+        case 3:
+          resultList.sort((b, a) => a.trialId.compareTo(b.trialId));
+          break;
+        default:
+          return;
+      }
+    });
+  }
+}

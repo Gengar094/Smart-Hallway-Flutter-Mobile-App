@@ -1,0 +1,27 @@
+<main>
+	<verbose>false</verbose>
+	<timestamps>false</timestamps>
+	<images>false</images>
+	<video>true</video>
+
+	<width>1440</width>
+	<height>1080</height>
+	<flip>false</flip>
+	<fps>60</fps>
+
+	<exposuretime>3000</exposuretime>
+	<warmuptime>3000</warmuptime>
+	<imagebuffer>10</imagebuffer>
+	<imagemax>18000</imagemax>
+
+	<pixelformat>BayerRG8</pixelformat>
+
+	<primaryserial>20010189</primaryserial>
+	
+	<outpath>/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/</outpath>
+
+	<serverip></serverip>
+
+	<serverport></serverport>
+
+</main>
