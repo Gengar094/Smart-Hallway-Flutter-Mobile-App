@@ -1,5 +1,6 @@
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:im_stepper/stepper.dart';
 import 'package:smart_hallway/main_page/info_container.dart';
 import 'package:smart_hallway/util/util.dart';
@@ -13,20 +14,24 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   bool start = false;
+
+  final _formKey = GlobalKey<FormState>();
   int _trialId = -1;
+  final trialIdController = TextEditingController();
   String _fileName = '';
+  final fileNameController = TextEditingController();
   String _comment = '';
+  final commentController = TextEditingController();
 
   int _activeStep = 0;
   int _upperBound = 4;
 
+  int min = 0;
   final minController = TextEditingController();
   final _minKey = GlobalKey<FormState>();
+  int sec = 0;
   final secController = TextEditingController();
   final _secKey = GlobalKey<FormState>();
-
-  int min = 0;
-  int sec = 0;
 
   bool _minInputError = false;
   bool _secInputError = false;
@@ -125,95 +130,104 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _createInputForm() {
-    return Center(
-      child: Column(
-        children: [
-          Container(
-              width: 350,
-              margin: const EdgeInsets.fromLTRB(0, 50, 0, 20),
-              child: const TextField(
-                scrollPadding: EdgeInsets.only(bottom: 40),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Trial Id',
+    return Form(
+            child:SingleChildScrollView (
+              child: Column(
+              children: [
+                Padding(
+                    padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
                 ),
-              )),
-          Container(
-              width: 350,
-              margin: const EdgeInsets.fromLTRB(0, 10, 0, 20),
-              child: const TextField(
-                scrollPadding: EdgeInsets.only(bottom: 40),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'File Name (Optional)',
+                Container(
+                    width: MediaQuery.of(context).size.width / 1.18,
+                    child: TextFormField(
+                      scrollPadding: EdgeInsets.only(bottom: 40),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Trial Id',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter the Trial Id';
+                        }
+                        return null;
+                      },
+                    )
                 ),
-              )),
-          Container(
-              width: 350,
-              margin: const EdgeInsets.fromLTRB(0, 10, 0, 20),
-              child: const TextField(
-                maxLines: null,
-                scrollPadding: EdgeInsets.only(bottom: 40),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Comment (Optional)',
+                Padding(
+                    padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
                 ),
-              )),
-        ],
-      ),
-    );
+                Container(
+                    width: MediaQuery.of(context).size.width / 1.18,
+                    child: TextFormField(
+                      scrollPadding: EdgeInsets.only(bottom: 40),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'File Name (Optional)',
+                      ),
+                    )
+                ),
+                Padding(
+                    padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
+                ),
+                Container(
+                    width: MediaQuery.of(context).size.width / 1.18,
+                    child: TextFormField(
+                      scrollPadding: EdgeInsets.only(bottom: 40),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Comment (Optional)',
+                      ),
+                    )
+                ),
+                Padding(
+                    padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
+                ),
+              ],
+            ),
+    ));
   }
 
   Widget _createTimerForm() {
-    return Center(
-        heightFactor: 5,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return SingleChildScrollView(
+        child: Column(
           children: [
-            SizedBox(
-              width: 50,
-              height: 30,
-              child: TextFormField(
-                controller: minController,
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _minInputError ? Colors.red : Colors.grey,
-                    ),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
+            ),
+            Container(
+                width: MediaQuery.of(context).size.width / 1.18,
+                child: TextField(
+                  controller: minController,
+                  textAlign: TextAlign.left,
+                  scrollPadding: EdgeInsets.only(bottom: 40),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Minutes',
                   ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty || !isNumeric(value)) {
-                    return 'Please enter a valid min number';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  setState(() {
-                    _minInputError = !_minKey.currentState!.validate();
-                  });
-                },
-              ),
+                )),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
             ),
-            Text('Min(s)'),
-            SizedBox(
-              width: 50,
-              height: 30,
-              child: TextField(
-                controller: secController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-              ),
+            Container(
+                width: MediaQuery.of(context).size.width / 1.18,
+                child: TextField(
+                  controller: secController,
+                  textAlign: TextAlign.left,
+                  scrollPadding: EdgeInsets.only(bottom: 40),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Seconds',
+                  ),
+                )
             ),
-            Text('Sec(s)'),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
+            ),
           ],
         ));
   }
 
   _createButtons(int activeStep) {
-    print(activeStep);
     switch (activeStep) {
       case 0:
         return Container(
@@ -260,7 +274,14 @@ class _MainPageState extends State<MainPage> {
           ],
         );
       case 2:
-        return _empty();
+        return TextButton(
+            onPressed: () {
+              setState(() {
+                print('cancel');
+                _activeStep--;
+              });
+            },
+            child: Text('Cancel'));
       case 3:
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -289,33 +310,59 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _createAllSetPage() {
-    return Container(
-        margin: const EdgeInsets.fromLTRB(0, 150, 0, 20),
+    return Column(
+      children: [
+        Padding(
+            padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
+        ),
+        Image.asset(
+          'assets/image/682-6827427_thumbs-down-emoji-png.png',
+          width: 200,
+          height: 200,
+        ),
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+          child: const Text(
+          'You are all set! You should be able to see the data in the history page!')
+        ),
+      ],
+    );
+
+      Container(
+        margin: const EdgeInsets.fromLTRB(20, 150, 20, 20),
         child: const Text(
             'You are all set! You should be able to see the data in the history page!'));
   }
 
-  Widget _empty() {
-    return Container();
-  }
 
   Widget _createTimerPage() {
     int duration = min * 60 + sec;
-    return Container(
-      child: CircularCountDownTimer(
-        width: MediaQuery.of(context).size.width / 3,
-        height: MediaQuery.of(context).size.height / 3,
-        duration: duration,
-        fillColor: Colors.green.shade100,
-        ringColor: Colors.green,
-        onStart: () {
-          print('Countdown Started');
-        },
-        onComplete: () {
-          setState(() {
-            _activeStep++;
-          });
-        },
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
+          ),
+          Container(
+            child: CircularCountDownTimer(
+            width: MediaQuery.of(context).size.width / 3,
+            height: MediaQuery.of(context).size.height / 4,
+            duration: duration,
+            fillColor: Colors.green.shade100,
+            ringColor: Colors.green,
+            onStart: () {
+              print('Countdown Started');
+            },
+            onComplete: () {
+              setState(() {
+                _activeStep++;
+              });
+            },
+          ),
+        ),
+          Text("Filming in progress..."),
+
+        ],
       ),
     );
   }

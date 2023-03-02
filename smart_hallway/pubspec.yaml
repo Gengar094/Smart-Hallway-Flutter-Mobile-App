@@ -63,6 +63,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/config.xml
+    - assets/image/682-6827427_thumbs-down-emoji-png.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
