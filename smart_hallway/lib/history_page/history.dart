@@ -32,9 +32,12 @@ class _HistoryPageState extends State<HistoryPage> {
     // TODO: implement initState
     _loadItems().then((value) {
         print("herer");
-        setState(() {
-          _items = List.from(value);
-          resultList = List.from(_items);
+        _loadSavedItems().then((savedItems) {
+          setState(() {
+            _items = List.from(value);
+            savedList = List.from(savedItems);
+            resultList = List.from(_items);
+          });
         });
     });
   }
@@ -282,6 +285,13 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Future<List<HistoryItem>> _loadItems() async{
     List<Map<String, dynamic>> dataList = await widget.db.query('history');
+    return dataList.map((data) => HistoryItem.fromMap(data)).toList();
+  }
+
+  Future<List<HistoryItem>> _loadSavedItems() async{
+    List<Map<String, dynamic>> dataList = await widget.db.rawQuery(
+      'SELECT * FROM history where saved = 1;'
+    );
     return dataList.map((data) => HistoryItem.fromMap(data)).toList();
   }
 
