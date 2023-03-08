@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:expansion_tile_card/expansion_tile_card.dart';
 import 'package:smart_hallway/model/history_item.dart';
 import '../history_page/save.dart';
+import 'package:sqflite/sqflite.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+  final Database db;
+  const HistoryPage({super.key, required this.db});
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -13,13 +15,14 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   // hardcoded datalist
-  List<HistoryItem> _items = List<HistoryItem>.generate(
-      50,
-      (index) => HistoryItem(
-          trialId: index,
-          comment: "this is hardcoded",
-          fileName: index.toString() + " test"));
+  // List<HistoryItem> _items = List<HistoryItem>.generate(
+  //     50,
+  //     (index) => HistoryItem(
+  //         trialId: index,
+  //         comment: "this is hardcoded",
+  //         fileName: index.toString() + " test"));
 
+  List<HistoryItem> _items = [];
   List<HistoryItem> savedList = List.empty(growable: true);
 
   List<HistoryItem> resultList = [];
@@ -27,7 +30,13 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     // TODO: implement initState
-    resultList = List.from(_items);
+    _loadItems().then((value) {
+        print("herer");
+        setState(() {
+          _items = List.from(value);
+          resultList = List.from(_items);
+        });
+    });
   }
 
   @override
@@ -192,7 +201,16 @@ class _HistoryPageState extends State<HistoryPage> {
       savedList.removeWhere((element) => element.trialId == trialId);
       resultList.removeWhere((element) => element.trialId == trialId);
       _items.removeWhere((element) => element.trialId == trialId);
+      _removeFromDB(trialId);
     });
+  }
+
+  _removeFromDB(int trialId) async{
+    await widget.db.delete(
+      'history',
+      where: 'trialId = ?',
+      whereArgs: [trialId],
+    );
   }
 
   _save(int trialId) {
@@ -200,7 +218,22 @@ class _HistoryPageState extends State<HistoryPage> {
       if (item.trialId == trialId) {
         item.saved = true;
         savedList.add(item);
+        _changeToSavedInDB(trialId, true);
       }
+    }
+  }
+
+  _changeToSavedInDB(int trialId, bool saved) async{
+    if (saved) {
+      await widget.db.rawUpdate(
+          'UPDATE history SET saved = 1 WHERE trialId = ?',
+          [trialId]
+      );
+    } else {
+      await widget.db.rawUpdate(
+          'UPDATE history SET saved = 0 WHERE trialId = ?',
+          [trialId]
+      );
     }
   }
 
@@ -210,6 +243,7 @@ class _HistoryPageState extends State<HistoryPage> {
         if (item.trialId == trialId) {
           item.saved = false;
           savedList.removeWhere((e) => e.trialId == trialId);
+          _changeToSavedInDB(trialId, false);
         }
       }
     });
@@ -220,7 +254,6 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void filterItems(String text) {
-    print(_items.contains('1 test'));
     resultList =
         _items.where((element) => element.fileName.contains(text)).toList();
     setState(() {});
@@ -246,4 +279,10 @@ class _HistoryPageState extends State<HistoryPage> {
       }
     });
   }
+
+  Future<List<HistoryItem>> _loadItems() async{
+    List<Map<String, dynamic>> dataList = await widget.db.query('history');
+    return dataList.map((data) => HistoryItem.fromMap(data)).toList();
+  }
+
 }

@@ -41,8 +41,8 @@ class Entry extends StatelessWidget {
                 child: TextButton(
                   onPressed: () {
                     // try to connect the server
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => MainPage()));
+                    // Navigator.push(context,
+                    //     MaterialPageRoute(builder: (context) => MainPage()));
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.green,

@@ -6,13 +6,20 @@ import 'package:smart_hallway/main_page/info_container.dart';
 import 'package:smart_hallway/util/util.dart';
 import '../setting_page/setting.dart';
 import '../history_page/history.dart';
+import 'package:sqflite/sqflite.dart';
 
 class MainPage extends StatefulWidget {
+  final Database db;
+  const MainPage({super.key, required this.db});
+
+
   @override
   _MainPageState createState() => _MainPageState();
 }
 
+
 class _MainPageState extends State<MainPage> {
+
   bool start = false;
 
   final _formKey = GlobalKey<FormState>();
@@ -99,7 +106,7 @@ class _MainPageState extends State<MainPage> {
 
   _onPressHistory() {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => HistoryPage()));
+        .push(MaterialPageRoute(builder: (context) => HistoryPage(db: widget.db)));
   }
 
   _onPressSetting() {
@@ -140,6 +147,7 @@ class _MainPageState extends State<MainPage> {
                 Container(
                     width: MediaQuery.of(context).size.width / 1.18,
                     child: TextFormField(
+                      controller: trialIdController,
                       scrollPadding: EdgeInsets.only(bottom: 40),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
@@ -151,6 +159,11 @@ class _MainPageState extends State<MainPage> {
                         }
                         return null;
                       },
+                      onChanged: (value) {
+                        setState(() {
+                          _trialId = int.parse(value);
+                        });
+                      },
                     )
                 ),
                 Padding(
@@ -159,11 +172,15 @@ class _MainPageState extends State<MainPage> {
                 Container(
                     width: MediaQuery.of(context).size.width / 1.18,
                     child: TextFormField(
+                      controller: fileNameController,
                       scrollPadding: EdgeInsets.only(bottom: 40),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'File Name (Optional)',
                       ),
+                      onChanged: (value) {
+                        _fileName = value;
+                      },
                     )
                 ),
                 Padding(
@@ -172,11 +189,15 @@ class _MainPageState extends State<MainPage> {
                 Container(
                     width: MediaQuery.of(context).size.width / 1.18,
                     child: TextFormField(
+                      controller: commentController,
                       scrollPadding: EdgeInsets.only(bottom: 40),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Comment (Optional)',
                       ),
+                      onChanged: (value) {
+                        _comment = value;
+                      },
                     )
                 ),
                 Padding(
@@ -225,6 +246,64 @@ class _MainPageState extends State<MainPage> {
             ),
           ],
         ));
+  }
+
+  Widget _createAllSetPage() {
+    return Column(
+      children: [
+        Padding(
+            padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
+        ),
+        Image.asset(
+          'assets/image/682-6827427_thumbs-down-emoji-png.png',
+          width: 200,
+          height: 200,
+        ),
+        Container(
+            margin: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+            child: const Text(
+                'You are all set! You should be able to see the data in the history page!')
+        ),
+      ],
+    );
+
+    Container(
+        margin: const EdgeInsets.fromLTRB(20, 150, 20, 20),
+        child: const Text(
+            'You are all set! You should be able to see the data in the history page!'));
+  }
+
+
+  Widget _createTimerPage() {
+    int duration = min * 60 + sec;
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
+          ),
+          Container(
+            child: CircularCountDownTimer(
+              width: MediaQuery.of(context).size.width / 3,
+              height: MediaQuery.of(context).size.height / 4,
+              duration: duration,
+              fillColor: Colors.green.shade100,
+              ringColor: Colors.green,
+              onStart: () {
+                print('Countdown Started');
+              },
+              onComplete: () {
+                setState(() {
+                  _activeStep++;
+                });
+              },
+            ),
+          ),
+          Text("Filming in progress..."),
+
+        ],
+      ),
+    );
   }
 
   _createButtons(int activeStep) {
@@ -298,6 +377,8 @@ class _MainPageState extends State<MainPage> {
                   setState(() {
                     _activeStep = 0;
                     start = false;
+                    addToHistory();
+                    reset();
                   });
                 },
                 child: Text('Finish')),
@@ -309,61 +390,23 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  Widget _createAllSetPage() {
-    return Column(
-      children: [
-        Padding(
-            padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
-        ),
-        Image.asset(
-          'assets/image/682-6827427_thumbs-down-emoji-png.png',
-          width: 200,
-          height: 200,
-        ),
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-          child: const Text(
-          'You are all set! You should be able to see the data in the history page!')
-        ),
-      ],
-    );
-
-      Container(
-        margin: const EdgeInsets.fromLTRB(20, 150, 20, 20),
-        child: const Text(
-            'You are all set! You should be able to see the data in the history page!'));
+  void reset() {
+    _trialId = -1;
+    _fileName = '';
+    _comment = '';
   }
 
-
-  Widget _createTimerPage() {
-    int duration = min * 60 + sec;
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
-          ),
-          Container(
-            child: CircularCountDownTimer(
-            width: MediaQuery.of(context).size.width / 3,
-            height: MediaQuery.of(context).size.height / 4,
-            duration: duration,
-            fillColor: Colors.green.shade100,
-            ringColor: Colors.green,
-            onStart: () {
-              print('Countdown Started');
-            },
-            onComplete: () {
-              setState(() {
-                _activeStep++;
-              });
-            },
-          ),
-        ),
-          Text("Filming in progress..."),
-
-        ],
-      ),
-    );
+  void addToHistory() async{
+    WidgetsFlutterBinding.ensureInitialized();
+    await widget.db.insert(
+        'history',
+        {
+          'trialId': _trialId,
+          'comment': _comment,
+          'fileName': _fileName,
+          'trialTime': DateTime.now().toIso8601String(),
+          'saved': 0
+        }
+        );
   }
 }
