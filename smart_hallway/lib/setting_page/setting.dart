@@ -24,6 +24,8 @@ class _SettingPageState extends State<SettingPage> {
   @override
   void initState() {
     super.initState();
+    _serverAddress = widget.prefs.getString('ipAddress') ?? '';
+    _port = widget.prefs.getString('port') ?? '';
   }
 
   @override
@@ -57,6 +59,7 @@ class _SettingPageState extends State<SettingPage> {
                       onChange: (value) {
                         setState(() {
                            widget.prefs.setString('ipAddress', value);
+                           _serverAddress = value;
                         });
                       },
                     ),
@@ -68,6 +71,7 @@ class _SettingPageState extends State<SettingPage> {
                       onChange: (value) {
                         setState(() {
                           widget.prefs.setString('port', value);
+                          _port = value;
                         });
                       },
                     ),
