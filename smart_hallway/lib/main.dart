@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_hallway/db_script/history_db.dart';
 import 'package:smart_hallway/main_page/main_page.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart'
     as setting;
 import 'package:sqflite/sqflite.dart';
+
+late SharedPreferences prefs;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,5 +18,6 @@ void main() async {
         await db.execute(HISTORY_DB_CREATION);
       }
   );
-  runApp(MaterialApp(home: MainPage(db: db)));
+  prefs = await SharedPreferences.getInstance();
+  runApp(MaterialApp(home: MainPage(db: db, prefs: prefs)));
 }

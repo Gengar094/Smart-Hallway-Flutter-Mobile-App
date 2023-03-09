@@ -2,6 +2,8 @@ import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_stepper/stepper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smart_hallway/main.dart';
 import 'package:smart_hallway/main_page/info_container.dart';
 import 'package:smart_hallway/util/util.dart';
 import '../setting_page/setting.dart';
@@ -10,7 +12,8 @@ import 'package:sqflite/sqflite.dart';
 
 class MainPage extends StatefulWidget {
   final Database db;
-  const MainPage({super.key, required this.db});
+  final SharedPreferences prefs;
+  const MainPage({super.key, required this.db, required this.prefs});
 
 
   @override
@@ -111,7 +114,7 @@ class _MainPageState extends State<MainPage> {
 
   _onPressSetting() {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => SettingPage()));
+        .push(MaterialPageRoute(builder: (context) => SettingPage(prefs: widget.prefs)));
   }
 
   _startRecording() {
