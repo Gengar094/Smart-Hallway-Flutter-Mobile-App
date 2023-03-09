@@ -50,7 +50,6 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    print(_activeStep);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -99,7 +98,26 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _startRecording(),
+        onPressed: () {
+          if (widget.prefs.getBool('key-connected') == false) {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Connection Error'),
+                  content:
+                  const Text('Please connect to the server before starting the filming'),
+                  actions: [
+                    TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('OK')),
+                  ],
+                ));
+          } else {
+            _startRecording();
+          }
+        },
         backgroundColor: Colors.green,
         child: const Icon(Icons.add),
       ),
@@ -120,6 +138,14 @@ class _MainPageState extends State<MainPage> {
   _startRecording() {
     setState(() {
       start = true;
+    });
+  }
+
+  absortRecording() {
+    setState(() {
+      start = false;
+      _activeStep = 0;
+      reset();
     });
   }
 

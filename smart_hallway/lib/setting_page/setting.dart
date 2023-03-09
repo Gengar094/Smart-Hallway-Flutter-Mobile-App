@@ -8,24 +8,39 @@ import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
 class SettingPage extends StatefulWidget {
   final SharedPreferences prefs;
+  // final Function absortParentFilmingProcess;
   const SettingPage({super.key, required this.prefs});
 
   @override
   _SettingPageState createState() => _SettingPageState();
 }
 
-class _SettingPageState extends State<SettingPage> {
+class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
   String _serverAddress = '';
   String _port = '';
-  bool isConnected = false;
 
   String? config;
 
   @override
   void initState() {
     super.initState();
-    _serverAddress = widget.prefs.getString('ipAddress') ?? '';
-    _port = widget.prefs.getString('port') ?? '';
+    _serverAddress = widget.prefs.getString('key-ipAddress') ?? '';
+    _port = widget.prefs.getString('key-port') ?? '';
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      widget.prefs.setBool('key-connected', false);
+      print('connection closed');
+    }
   }
 
   @override
@@ -35,7 +50,7 @@ class _SettingPageState extends State<SettingPage> {
         appBar: AppBar(
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context, isConnected),
+            onPressed: () => Navigator.pop(context, widget.prefs.getBool('key-connected')),
           ),
           centerTitle: true,
           title: const Text('Smart Hallway'),
@@ -46,19 +61,34 @@ class _SettingPageState extends State<SettingPage> {
                 SettingsGroup(
                   title: 'Connection',
                   children: <Widget>[
-                    SwitchListTile(
-                      title: const Text('Connection'),
-                      value: isConnected,
-                      onChanged: (res) => {connect(res)},
+                    SwitchSettingsTile(
+                      title: 'Connection',
+                      settingKey: 'key-connected',
+                      defaultValue:
+                        widget.prefs.getBool('key-connected') ?? false,
+                      onChange: (value) {
+                        if (value) {
+                          if (tryConnect()) {
+                            setState(() {
+                              widget.prefs.setBool('key-connected', true);
+                            });
+                          }
+                        } else {
+                          setState(() {
+                            print('here');
+                            tryDisconnect();
+                          });
+                        }
+                      },
                     ),
                     TextInputSettingsTile(
                       title: 'Server IP address',
                       settingKey: 'key-server-ip-address',
                       initialValue:
-                        widget.prefs.get('ipAddress')?.toString() ?? '',
+                        widget.prefs.get('key-server-ip-address')?.toString() ?? '',
                       onChange: (value) {
                         setState(() {
-                           widget.prefs.setString('ipAddress', value);
+                           widget.prefs.setString('key-server-ip-address', value);
                            _serverAddress = value;
                         });
                       },
@@ -67,10 +97,10 @@ class _SettingPageState extends State<SettingPage> {
                       title: 'Server port',
                       settingKey: 'key-port',
                       initialValue:
-                        widget.prefs.get('port')?.toString() ?? '',
+                        widget.prefs.get('key-port')?.toString() ?? '',
                       onChange: (value) {
                         setState(() {
-                          widget.prefs.setString('port', value);
+                          widget.prefs.setString('key-port', value);
                           _port = value;
                         });
                       },
@@ -82,10 +112,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Verbose',
                     settingKey: 'key-verbose',
                     defaultValue:
-                      widget.prefs.getBool('verbose') ?? false,
+                      widget.prefs.getBool('key-verbose') ?? false,
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setBool('verbose', value);
+                        widget.prefs.setBool('key-verbose', value);
                       });
                     },
                   ),
@@ -93,10 +123,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Timestamp',
                     settingKey: 'key-timestamp',
                     defaultValue:
-                      widget.prefs.getBool('timestamp') ?? false,
+                      widget.prefs.getBool('key-timestamp') ?? false,
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setBool('timestamp', value);
+                        widget.prefs.setBool('key-timestamp', value);
                       });
                     },
                   ),
@@ -104,10 +134,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Images',
                     settingKey: 'key-images',
                       defaultValue:
-                        widget.prefs.getBool('images') ?? false,
+                        widget.prefs.getBool('key-images') ?? false,
                       onChange: (value) {
                         setState(() {
-                          widget.prefs.setBool('images', value);
+                          widget.prefs.setBool('key-images', value);
                         });
                       }
                   ),
@@ -115,10 +145,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Video',
                     settingKey: 'key-video',
                     defaultValue:
-                      widget.prefs.getBool('video') ?? true,
+                      widget.prefs.getBool('key-video') ?? true,
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setBool('video', value);
+                        widget.prefs.setBool('key-video', value);
                       });
                     },
                   ),
@@ -128,10 +158,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Width',
                     settingKey: 'key-width',
                     initialValue:
-                      widget.prefs.get('width')?.toString() ?? '1440',
+                      widget.prefs.get('key-width')?.toString() ?? '1440',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('width', value);
+                        widget.prefs.setString('key-width', value);
                       });
                     },
                   ),
@@ -139,10 +169,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Height',
                     settingKey: 'key-height',
                     initialValue:
-                      widget.prefs.get('height')?.toString() ?? '1080',
+                      widget.prefs.get('key-height')?.toString() ?? '1080',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('height', value);
+                        widget.prefs.setString('key-height', value);
                       });
                     },
                   ),
@@ -150,10 +180,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Flip',
                     settingKey: 'key-flip',
                     defaultValue:
-                      widget.prefs.getBool('flip') ?? false,
+                      widget.prefs.getBool('key-flip') ?? false,
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setBool('flip', value);
+                        widget.prefs.setBool('key-flip', value);
                       });
                     },
                   ),
@@ -161,10 +191,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'FPS',
                     settingKey: 'key-fps',
                     initialValue:
-                      widget.prefs.get('fps')?.toString() ?? '60',
+                      widget.prefs.get('key-fps')?.toString() ?? '60',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('fps', value);
+                        widget.prefs.setString('key-fps', value);
                       });
                     },
                   ),
@@ -172,10 +202,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Exposure time',
                     settingKey: 'key-exposure-time',
                     initialValue:
-                      widget.prefs.get('exposureTime')?.toString() ?? '3000',
+                      widget.prefs.get('key-exposure-time')?.toString() ?? '3000',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('exposureTime', value);
+                        widget.prefs.setString('key-exposure-time', value);
                       });
                     },
                   ),
@@ -183,10 +213,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Warmup time',
                     settingKey: 'key-warm-up-time',
                     initialValue:
-                      widget.prefs.get('warmUpTime')?.toString() ?? '3000',
+                      widget.prefs.get('key-warm-up-time')?.toString() ?? '3000',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('warmUpTime', value);
+                        widget.prefs.setString('key-warm-up-time', value);
                       });
                     },
                   ),
@@ -194,10 +224,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Image buffer',
                     settingKey: 'key-image-buffer',
                     initialValue:
-                      widget.prefs.get('imageBuffer')?.toString() ?? '10',
+                      widget.prefs.get('key-image-buffer')?.toString() ?? '10',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('imageBuffer', value);
+                        widget.prefs.setString('key-image-buffer', value);
                       });
                     },
                   ),
@@ -205,10 +235,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Image max',
                     settingKey: 'key-image-max',
                     initialValue:
-                      widget.prefs.get('imageMax')?.toString() ?? '18000',
+                      widget.prefs.get('key-image-max')?.toString() ?? '18000',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('imageMax', value);
+                        widget.prefs.setString('key-image-max', value);
                       });
                     },
                   ),
@@ -218,10 +248,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Pixel format',
                     settingKey: 'key-pixel-format',
                     initialValue:
-                      widget.prefs.get('pixelFormat')?.toString() ?? 'BayerRGB',
+                      widget.prefs.get('key-pixel-format')?.toString() ?? 'BayerRGB',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('pixelFormat', value);
+                        widget.prefs.setString('key-pixel-format', value);
                       });
                     },
                   ),
@@ -229,10 +259,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Primary serial',
                     settingKey: 'key-primary-serial',
                     initialValue:
-                      widget.prefs.get('primarySerial')?.toString() ?? '20010189',
+                      widget.prefs.get('key-primary-serial')?.toString() ?? '20010189',
                     onChange: (value) {
                       setState(() {
-                         widget.prefs.setString('primarySerial', value);
+                         widget.prefs.setString('key-primary-serial', value);
                       });
                     },
                   ),
@@ -240,10 +270,10 @@ class _SettingPageState extends State<SettingPage> {
                     title: 'Output Path',
                     settingKey: 'key-output-path',
                     initialValue:
-                      widget.prefs.get('outputPath')?.toString() ?? '/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/',
+                      widget.prefs.get('key-output-path')?.toString() ?? '/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/',
                     onChange: (value) {
                       setState(() {
-                        widget.prefs.setString('outputPath', value);
+                        widget.prefs.setString('key-output-path', value);
                       });
                     },
                   ),
@@ -253,14 +283,14 @@ class _SettingPageState extends State<SettingPage> {
         );
   }
 
-  connect(bool res) {
-    if (res && _serverAddress == '') {
+  bool tryConnect() {
+    if (widget.prefs.getString('key-server-ip-address') == '') {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
                 title: const Text('Error'),
                 content: const Text(
-                    'Please Provide the IP address and port number of the server'),
+                    'Please provide the IP address and port number of the server'),
                 actions: [
                   TextButton(
                       onPressed: () {
@@ -269,13 +299,14 @@ class _SettingPageState extends State<SettingPage> {
                       child: const Text('OK')),
                 ],
               ));
-    } else if (res && _port == '') {
+      return false;
+    } else if (widget.prefs.getString('key-port') == '') {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
                 title: const Text('Error'),
                 content:
-                    const Text('Please Provide the port number of the server'),
+                    const Text('Please provide the port number of the server'),
                 actions: [
                   TextButton(
                       onPressed: () {
@@ -284,31 +315,10 @@ class _SettingPageState extends State<SettingPage> {
                       child: const Text('OK')),
                 ],
               ));
-    } else if (!res) {
-      showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-                title: const Text('Warning'),
-                content: const Text('Do you want to disconnect the server?'),
-                actions: [
-                  TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Cancel')),
-                  TextButton(
-                      onPressed: () {
-                        setState(() {
-                          isConnected = false;
-                        });
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Continue')),
-                ],
-              ));
+      return false;
     } else {
       setState(() {
-        isConnected = true;
+        widget.prefs.setBool('key-connected', true);
       });
       showDialog(
           context: context,
@@ -324,156 +334,44 @@ class _SettingPageState extends State<SettingPage> {
 
             return dialog;
           });
+      return true;
     }
   }
 
 
-// shared preference to persist the config data
-//   Future<void> initSharedPreferences() async {
-//     prefs = await SharedPreferences.getInstance();
-// //   }
-//
-//   void saveConnectionState(String key, bool connected) async{
-//     await widget.prefs.setBool(key, connected);
-//   }
-//
-//   Future<bool?> getConnectionState(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   void saveIPAddress(String key, String ipAdr) async{
-//     await widget.prefs.setString(key, ipAdr);
-//   }
-//
-//   Future<String?> getIPAddress(String key) async{
-//     return widget.prefs.getString(key);
-//   }
-//
-//   void savePort(String key, String port) async{
-//     await widget.prefs.setString(key, port);
-//   }
-//
-//   Future<String?> getPort(String key) async{
-//     return widget.prefs.getString(key);
-//   }
-//
-//   void saveVerbose(String key, bool verbose) async{
-//     await widget.prefs.setBool(key, verbose);
-//   }
-//
-//   Future<bool?> getVerbose(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   void saveTimestamp(String key, bool timestamp) async{
-//     await widget.prefs.setBool(key, timestamp);
-//   }
-//
-//   Future<bool?> getTimestamp(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   void saveImages(String key, bool image) async{
-//     await widget.prefs.setBool(key, image);
-//   }
-//
-//   Future<bool?> getImages(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   void saveVideo(String key, bool video) async{
-//     await widget.prefs.setBool(key, video);
-//   }
-//
-//   Future<bool?> getVideo(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   Future<int?> getWidth(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveWidth(String key, int width) async{
-//     await widget.prefs.setInt(key, width);
-//   }
-//
-//   Future<int?> getHeight(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveHeight(String key, int height) async{
-//     await widget.prefs.setInt(key, height);
-//   }
-//
-//   void saveFlip(String key, bool flip) async{
-//     await widget.prefs.setBool(key, flip);
-//   }
-//
-//   Future<bool?> getFlip(String key) async{
-//     return widget.prefs.getBool(key);
-//   }
-//
-//   void saveFPS(String key, int fps) async{
-//     await widget.prefs.setInt(key, fps);
-//   }
-//
-//   Future<int?> getFPS(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveExposureTime(String key, int exposureTime) async{
-//     await widget.prefs.setInt(key, exposureTime);
-//   }
-//
-//   Future<int?> getExposureTime(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveWarmUpTime(String key, int warmUpTime) async{
-//     await widget.prefs.setInt(key, warmUpTime);
-//   }
-//
-//   Future<int?> getWarmUpTime(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveImageBuffer(String key, int imageBuffer) async{
-//     await widget.prefs.setInt(key, imageBuffer);
-//   }
-//
-//   Future<int?> getImageBuffer(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveImageMax(String key, int imageMax) async{
-//     await widget.prefs.setInt(key, imageMax);
-//   }
-//
-//   Future<int?> getImageMax(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void savePixelFormat(String key, String pixelFormat) async{
-//     await widget.prefs.setString(key, pixelFormat);
-//   }
-//
-//   Future<String?> getPixelFormat(String key) async{
-//     return widget.prefs.getString(key);
-//   }
-//
-//   void savePrimarySerial(String key, int primarySerial) async{
-//     await widget.prefs.setInt(key, primarySerial);
-//   }
-//
-//   Future<int?> getPrimarySerial(String key) async{
-//     return widget.prefs.getInt(key);
-//   }
-//
-//   void saveOutputPath(String key, String outputPath) async{
-//     await widget.prefs.setString(key, outputPath);
-//   }
-//
-//   Future<String?> getOutputPath(String key) async{
-//     return widget.prefs.getString(key);
-//   }
+  bool tryDisconnect() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Warning'),
+        content: const Text('Do you want to disconnect the server?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                widget.prefs.setBool('key-connected', true);
+                print('cancel');
+                // TODO BUG: cancel cannot hold the switch stable
+              });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+            setState(() {
+              // absortFilmingProcess();
+              widget.prefs.setBool('key-connected', false);
+            });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Continue')),
+        ],
+    ));
+      return true;
+  }
+
+  // void absortFilmingProcess() {
+  //   absortFilmingProcess();
+  // }
+
 }
