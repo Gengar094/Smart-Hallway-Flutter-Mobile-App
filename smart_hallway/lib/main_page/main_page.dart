@@ -402,9 +402,28 @@ class _MainPageState extends State<MainPage> {
                 TextButton(
                     onPressed: () {
                       setState(() {
-                        if (_trialIdError() == -1 && _fileNameError() == -1) {
-                          _activeStep++;
-                        }
+                        exist(int.parse(trialIdController.value.text)).then((value) {
+                          if (value.isEmpty) {
+                            if (_trialIdError() == -1 && _fileNameError() == -1) {
+                              _activeStep++;
+                            }
+                          } else {
+                            showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Error'),
+                                  content: const Text(
+                                      'The trial Id has been used'),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: const Text('OK')),
+                                  ],
+                                ));
+                          }
+                        });
                       });
                     },
                     child: Text('Continue')),
