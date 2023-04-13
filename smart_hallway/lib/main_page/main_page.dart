@@ -339,11 +339,6 @@ class _MainPageState extends State<MainPage> {
         ),
       ],
     );
-
-    Container(
-        margin: const EdgeInsets.fromLTRB(20, 150, 20, 20),
-        child: const Text(
-            'You are all set! You should be able to see the data in the history page!'));
   }
 
 
@@ -474,6 +469,25 @@ class _MainPageState extends State<MainPage> {
                     _activeStep = 0;
                     addToHistory();
                     reset();
+                    if (widget.prefs.getBool('key-connected') == false) {
+                      showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Connection Error'),
+                            content:
+                            const Text('Please connect to the server before starting the filming'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    setState(() {
+                                      start = false;
+                                    });
+                                  },
+                                  child: const Text('OK')),
+                            ],
+                          ));
+                    }
                   });
                 },
                 child: Text('Start over')),
