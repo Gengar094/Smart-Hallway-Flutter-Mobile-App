@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_stepper/stepper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smart_hallway/main.dart';
 import 'package:smart_hallway/main_page/info_container.dart';
-import 'package:smart_hallway/util/util.dart';
+import 'package:smart_hallway/util/ssh.dart';
 import '../setting_page/setting.dart';
 import '../history_page/history.dart';
 import 'package:sqflite/sqflite.dart';
@@ -28,11 +27,17 @@ class _MainPageState extends State<MainPage> {
   final _formKey = GlobalKey<FormState>();
   int _trialId = -1;
   final trialIdController = TextEditingController();
+  bool trialIdValidate = false;
+  bool fileNameValidate = false;
   String _fileName = '';
   final fileNameController = TextEditingController();
   String _comment = '';
   final commentController = TextEditingController();
+  final DESIGNATED_PATH = 'Desktop';
+  SSHConnection ssh = SSHConnection();
 
+
+  bool numValidate = false;
   int _activeStep = 0;
   int _upperBound = 4;
 
@@ -150,7 +155,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _createStepPage(int activeStep) {
-    print(activeStep);
     switch (activeStep) {
       case 0:
         return _createInputForm();
@@ -175,22 +179,26 @@ class _MainPageState extends State<MainPage> {
                 ),
                 Container(
                     width: MediaQuery.of(context).size.width / 1.18,
-                    child: TextFormField(
+                    child: TextField(
                       controller: trialIdController,
                       scrollPadding: EdgeInsets.only(bottom: 40),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Trial Id',
+                        errorText: trialIdValidate ? _trialIdErrorText : null,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter the Trial Id';
-                        }
-                        return null;
+                      onTap:() {
+                        setState(() {
+                          trialIdValidate = true;
+                        });
                       },
                       onChanged: (value) {
                         setState(() {
-                          _trialId = int.parse(value);
+                          try {
+                            _trialId = int.parse(value);
+                          } catch (e) {
+                            print('should not happen');
+                          }
                         });
                       },
                     )
@@ -205,8 +213,14 @@ class _MainPageState extends State<MainPage> {
                       scrollPadding: EdgeInsets.only(bottom: 40),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'File Name (Optional)',
+                        labelText: 'File Name',
+                        errorText: fileNameValidate ? _fileNameErrorText : null,
                       ),
+                      onTap:() {
+                        setState(() {
+                          fileNameValidate = true;
+                        });
+                      },
                       onChanged: (value) {
                         _fileName = value;
                       },
@@ -253,7 +267,22 @@ class _MainPageState extends State<MainPage> {
                   decoration: InputDecoration(
                     border: OutlineInputBorder(),
                     labelText: 'Minutes',
+                    errorText: numValidate ? minErrorText : null,
                   ),
+                  onTap:() {
+                    setState(() {
+                      numValidate = true;
+                    });
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      try {
+                        min = int.parse(value);
+                      } catch (e) {
+                        print('should not happen');
+                      }
+                    });
+                  },
                 )),
             Padding(
                 padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
@@ -267,7 +296,22 @@ class _MainPageState extends State<MainPage> {
                   decoration: InputDecoration(
                     border: OutlineInputBorder(),
                     labelText: 'Seconds',
+                    errorText: numValidate ? secErrorText : null,
                   ),
+                  onTap:() {
+                    setState(() {
+                      numValidate = true;
+                    });
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      try {
+                        sec = int.parse(value);
+                      } catch (e) {
+                        print('should not happen');
+                      }
+                    });
+                  },
                 )
             ),
             Padding(
@@ -320,8 +364,13 @@ class _MainPageState extends State<MainPage> {
               ringColor: Colors.green,
               onStart: () {
                 print('Countdown Started');
+                ssh.moveTo(DESIGNATED_PATH).then((value) => print(value));
+                ssh.startRecording().then((value) => print(value));
               },
               onComplete: () {
+                // send request through ssh
+                print('complete');
+                ssh.endRecording().then((value) => print(value));
                 setState(() {
                   _activeStep++;
                 });
@@ -353,7 +402,9 @@ class _MainPageState extends State<MainPage> {
                 TextButton(
                     onPressed: () {
                       setState(() {
-                        _activeStep++;
+                        if (_trialIdError() == -1 && _fileNameError() == -1) {
+                          _activeStep++;
+                        }
                       });
                     },
                     child: Text('Continue')),
@@ -373,9 +424,13 @@ class _MainPageState extends State<MainPage> {
             TextButton(
                 onPressed: () {
                   setState(() {
-                    _activeStep++;
-                    min = int.parse(minController.text);
-                    sec = int.parse(secController.text);
+                    print(minErrorText);
+                    print(secErrorText);
+                    if (minErrorText == null && secErrorText == null) {
+                      _activeStep++;
+                      min = int.parse(minController.value.text);
+                      sec = int.parse(secController.value.text);
+                    }
                   });
                 },
                 child: Text('Continue')),
@@ -398,6 +453,8 @@ class _MainPageState extends State<MainPage> {
                 onPressed: () {
                   setState(() {
                     _activeStep = 0;
+                    addToHistory();
+                    reset();
                   });
                 },
                 child: Text('Start over')),
@@ -413,7 +470,6 @@ class _MainPageState extends State<MainPage> {
                 child: Text('Finish')),
           ],
         );
-        ;
       default:
         return Container();
     }
@@ -437,5 +493,114 @@ class _MainPageState extends State<MainPage> {
           'saved': 0
         }
         );
+  }
+
+  int _trialIdError() {
+    final text = trialIdController.value.text;
+
+    if (text.isEmpty) {
+      return 0;
+    }
+
+    try {
+      int.parse(text);
+    } catch (e) {
+      return 1;
+    }
+
+    // bool res = await exist(int.parse(text));
+    // if (res) {
+    //   return 2;
+    // }
+    return -1;
+  }
+
+  int _fileNameError() {
+    final text = fileNameController.value.text;
+
+    if (text.isEmpty) {
+      return 0;
+    }
+
+    // bool res = await exist(int.parse(text));
+    // if (res) {
+    //   return 2;
+    // }
+    return -1;
+  }
+
+  String? get _trialIdErrorText {
+    final text = trialIdController.value.text;
+
+    if (text.isEmpty) {
+      return 'Cannot be empty';
+    }
+    print(text);
+    try {
+      int.parse(text);
+    } catch (e) {
+      return 'Please enter numbers';
+    }
+
+    // print('hhh');
+    //
+    //  exist(int.parse(text)).then((value) {
+    //   print(value);
+    //   print(value.isNotEmpty);
+    //   if (value.isNotEmpty) {
+    //     return 'trial Id has been used';
+    //   }
+    // });
+
+  }
+
+  String? get _fileNameErrorText {
+    final text = fileNameController.value.text;
+
+    if (text.isEmpty) {
+      return 'Please provide the file name';
+    }
+  }
+
+  String? get minErrorText {
+    final text = minController.value.text;
+    if (text.isEmpty) {
+      return 'Cannot be empty';
+    }
+    try {
+      int.parse(text);
+    } catch (e) {
+      return 'Please enter numbers';
+    }
+    int num = int.parse(text);
+    if (num < 0) {
+      return 'Please enter positive numbers or zero';
+    }
+  }
+
+  String? get secErrorText {
+    final text = secController.value.text;
+    if (text.isEmpty) {
+      return 'Cannot be empty';
+    }
+    try {
+      int.parse(text);
+    } catch (e) {
+      return 'Please enter numbers';
+    }
+    int num = int.parse(text);
+    if (num < 0) {
+      return 'Please enter positive numbers or zero';
+    }
+  }
+
+
+
+  Future<List<Map<String, Object?>>> exist(int id) async{
+    return await widget.db.query(
+      'history',
+      where: 'trialId = ?',
+      whereArgs: [id]
+    );
   }
 }
