@@ -2,6 +2,7 @@ import 'package:ssh2/ssh2.dart';
 
 class SSHConnection {
   late SSHClient _client;
+  String result = "";
   SSHConnection._internal();
   static final SSHConnection _singleton = SSHConnection._internal();
 
@@ -15,16 +16,23 @@ class SSHConnection {
     required String username,
     required String passwordOrKey,
   }) async {
-      _client = SSHClient(
-          host: host,
-          port: port,
-          username: username,
-          passwordOrKey: passwordOrKey);
-      return await _client.connect();
+    _client = SSHClient(
+        host: host,
+        port: port,
+        username: username,
+        passwordOrKey: passwordOrKey);
+    var res = await _client.connect();
+    _client.startShell(
+      callback: (dynamic res) {
+        print(result + res);
+      }
+    );
+
+    return res;
   }
 
   Future<String?> _executeCommand(String command) async {
-    final result = await _client.execute(command);
+    final result = await _client.writeToShell(command);
     return result;
   }
 
@@ -37,15 +45,16 @@ class SSHConnection {
   }
 
   Future<String?> moveTo(String path) async {
-    return _executeCommand('cd $path');
+    return _executeCommand('cd $path\n');
   }
 
-  Future<String?> startRecording() async {
-    return _executeCommand('echo echochenggong');
+  Future<String?> startRecording(String filename) async {
+    await _executeCommand('./multicamera_capture\n');
+    return _executeCommand('$filename\n');
   }
 
   Future<String?> endRecording() async {
-    return _executeCommand('ipconfig');
+    return _executeCommand('1\n');
   }
 
 }

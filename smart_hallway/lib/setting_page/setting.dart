@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_hallway/util/ssh.dart';
-import 'package:ssh2/ssh2.dart';
 import 'package:xml/xml.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
@@ -366,7 +365,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             ssh.connect(
                 host: widget.prefs.getString('key-server-ip-address') ?? 'localhost',
                 port: int.parse(widget.prefs.getString('key-port') ?? '22'),
-                username: 'Yihao',
+                username: 'zharry',
                 passwordOrKey: 'Zyh&*(980110'
             ).then((res) {
               if (res == 'session_connected') {
@@ -395,7 +394,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
           // disconnect from SSH server
           widget.prefs.setBool('key-connected', false);
           ssh.isConnected().then(
-              (connected) {
+                  (connected) {
                 if (connected) {
                   ssh.disconnect();
                 }

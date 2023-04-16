@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
   final fileNameController = TextEditingController();
   String _comment = '';
   final commentController = TextEditingController();
-  final DESIGNATED_PATH = 'Desktop';
+  final DESIGNATED_PATH = 'Desktop/workspace';
   SSHConnection ssh = SSHConnection();
 
 
@@ -359,8 +359,12 @@ class _MainPageState extends State<MainPage> {
               ringColor: Colors.green,
               onStart: () {
                 print('Countdown Started');
-                ssh.moveTo(DESIGNATED_PATH).then((value) => print(value));
-                ssh.startRecording().then((value) => print(value));
+                ssh.moveTo(DESIGNATED_PATH).then((value) {
+                    print(value);
+                  }
+                ).then((value) {
+                  ssh.startRecording(_fileName).then((value) => print(value));
+                });
               },
               onComplete: () {
                 // send request through ssh
@@ -622,8 +626,8 @@ class _MainPageState extends State<MainPage> {
       return 'Please enter numbers';
     }
     int num = int.parse(text);
-    if (num < 0) {
-      return 'Please enter positive numbers or zero';
+    if (num <= 0) {
+      return 'Please enter positive numbers';
     }
   }
 

@@ -46,6 +46,7 @@ dependencies:
   permission_handler: ^10.2.0
   shared_preferences: ^2.0.18
   regexed_validator: ^2.0.0+1
+  dartssh2: ^2.8.2
   ssh2: ^2.2.3
 
 dev_dependencies:
