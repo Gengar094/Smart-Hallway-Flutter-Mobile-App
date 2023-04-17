@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:ssh2/ssh2.dart';
 
 class SSHConnection {
   late SSHClient _client;
   String result = "";
+  int mins = 0;
+  int secs = 0;
+  bool flag = false;
   SSHConnection._internal();
   static final SSHConnection _singleton = SSHConnection._internal();
 
@@ -22,13 +27,22 @@ class SSHConnection {
         username: username,
         passwordOrKey: passwordOrKey);
     var res = await _client.connect();
-    _client.startShell(
-      callback: (dynamic res) {
-        print(result + res);
-      }
-    );
-
     return res;
+  }
+
+  Future<String?> start(String filename, int mins, int secs) async {
+    return _client.startShell(
+        callback: (dynamic res) async {
+          print(res);
+          if (res == "Hello! Please enter your name:\n") {
+            await _executeCommand('$filename\r');
+          }
+          if (res == 'Press 1 to exit the program.\n') {
+            sleep(Duration(minutes: mins, seconds: secs));
+            await _executeCommand('1\r');
+          }
+        }
+    );
   }
 
   Future<String?> _executeCommand(String command) async {
@@ -48,13 +62,12 @@ class SSHConnection {
     return _executeCommand('cd $path\n');
   }
 
-  Future<String?> startRecording(String filename) async {
-    await _executeCommand('./multicamera_capture\n');
-    return _executeCommand('$filename\n');
+  Future<String?> startRecording() async {
+    return await _executeCommand('./multicamera_capture\r');
   }
 
-  Future<String?> endRecording() async {
-    return _executeCommand('1\n');
+  Future<String?> setName(String filename) async {
+    // return _executeCommand('$filename\r');
   }
 
 }

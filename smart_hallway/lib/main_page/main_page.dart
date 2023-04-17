@@ -40,6 +40,7 @@ class _MainPageState extends State<MainPage> {
   bool numValidate = false;
   int _activeStep = 0;
   int _upperBound = 4;
+  CountDownController controller = CountDownController();
 
   int min = 0;
   final minController = TextEditingController();
@@ -357,19 +358,18 @@ class _MainPageState extends State<MainPage> {
               duration: duration,
               fillColor: Colors.green.shade100,
               ringColor: Colors.green,
+              controller: controller,
               onStart: () {
-                print('Countdown Started');
-                ssh.moveTo(DESIGNATED_PATH).then((value) {
-                    print(value);
-                  }
-                ).then((value) {
-                  ssh.startRecording(_fileName).then((value) => print(value));
+                ssh.start(_fileName, min, sec).then((value) {
+                  ssh.moveTo(DESIGNATED_PATH).then((value) {
+                    ssh.startRecording();
+                  });
                 });
               },
               onComplete: () {
                 // send request through ssh
-                print('complete');
-                ssh.endRecording().then((value) => print(value));
+                // ssh.endRecording().then((value) {}
+                // );
                 setState(() {
                   _activeStep++;
                 });
