@@ -365,8 +365,8 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             ssh.connect(
                 host: widget.prefs.getString('key-server-ip-address') ?? 'localhost',
                 port: int.parse(widget.prefs.getString('key-port') ?? '22'),
-                username: 'zharry',
-                passwordOrKey: 'Zyh&*(980110',
+                username: 'rehablab-1',
+                passwordOrKey: 'rehab123',
             ).then((res) {
               if (res == 'session_connected') {
                 setState(() {

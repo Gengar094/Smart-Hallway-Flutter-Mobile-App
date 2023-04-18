@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
   final fileNameController = TextEditingController();
   String _comment = '';
   final commentController = TextEditingController();
-  final DESIGNATED_PATH = 'Desktop/workspace';
+  final DESIGNATED_PATH = 'workspace/SmartHallway/Debug';
   SSHConnection ssh = SSHConnection();
 
 

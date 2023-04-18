@@ -7,6 +7,7 @@ class SSHConnection {
   String result = "";
   int mins = 0;
   int secs = 0;
+  int counter = 0;
   bool flag = false;
   SSHConnection._internal();
   static final SSHConnection _singleton = SSHConnection._internal();
@@ -34,12 +35,18 @@ class SSHConnection {
     return _client.startShell(
         callback: (dynamic res) async {
           print(res);
-          if (res == "Hello! Please enter your name:\n") {
+          if (res == "Provide the name of the trial. [ex: test1] : \n") {
             await _executeCommand('$filename\r');
           }
-          if (res == 'Press 1 to exit the program.\n') {
-            sleep(Duration(minutes: mins, seconds: secs));
-            await _executeCommand('1\r');
+          if (res == '*** CAMERAS READY ***\n') {
+            if (counter < 3) {
+              counter++;
+              print(counter);
+            } else {
+              sleep(Duration(minutes: mins, seconds: secs));
+              print("here");
+              await _executeCommand('export DISPLAY=:0.0 && xdotool key Escape+Return\r');
+            }
           }
         }
     );
