@@ -1,12 +1,10 @@
+
 import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smart_hallway/util/ssh.dart';
-import 'package:xml/xml.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
+import '../util/client.dart';
 import '../util/util.dart';
 
 class SettingPage extends StatefulWidget {
@@ -19,7 +17,7 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
-  SSHConnection ssh = SSHConnection();
+  Client io = Client();
   String? config;
 
   @override
@@ -60,7 +58,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               title: Text('Connection'),
               value: widget.prefs.getBool('key-connected') ?? false ,
               onChanged: (value) {
-                  _toggleSSHConnection(value);
+                  _toggleConnection(value);
               }
             ),
             const Divider(
@@ -98,60 +96,95 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               height: 0,
             ),
             SettingsGroup(title: 'Recording Setting', children: <Widget>[
-              SwitchSettingsTile(
-                title: 'Verbose',
-                settingKey: 'key-verbose',
-                defaultValue:
-                  widget.prefs.getBool('key-verbose') ?? false,
-                onChange: (value) {
+              SwitchListTile(
+                title: Text('Verbose'),
+                value: widget.prefs.getBool('key-verbose') ?? false,
+                onChanged: (value) {
                   setState(() {
-                    widget.prefs.setBool('key-verbose', value);
+                    if (widget.prefs.getBool('key-connected') ?? false) {
+                      configXML("verbose", value.toString()).then((v) {
+                        widget.prefs.setBool('key-verbose', value);
+                      });
+                    } else {
+                      showError();
+                    }
                   });
                 },
               ),
-              SwitchSettingsTile(
-                title: 'Timestamp',
-                settingKey: 'key-timestamp',
-                defaultValue:
-                  widget.prefs.getBool('key-timestamp') ?? false,
-                onChange: (value) {
+              const Divider(
+                thickness: .5,
+                height: 0,
+              ),
+              SwitchListTile(
+                title: Text('Timestamp'),
+                value: widget.prefs.getBool('key-timestamp') ?? false,
+                onChanged: (value) {
                   setState(() {
-                    widget.prefs.setBool('key-timestamp', value);
+                    if (widget.prefs.getBool('key-connected') ?? false) {
+                      configXML("timestamps", value.toString()).then((v) {
+                        widget.prefs.setBool('key-timestamp', value);
+                      });
+                    } else {
+                      showError();
+                    }
                   });
                 },
               ),
-              SwitchSettingsTile(
-                title: 'Images',
-                settingKey: 'key-images',
-                  defaultValue:
-                    widget.prefs.getBool('key-images') ?? false,
-                  onChange: (value) {
-                    setState(() {
-                      widget.prefs.setBool('key-images', value);
-                    });
-                  }
+              const Divider(
+                thickness: .5,
+                height: 0,
               ),
-              SwitchSettingsTile(
-                title: 'Video',
-                settingKey: 'key-video',
-                defaultValue:
-                  widget.prefs.getBool('key-video') ?? true,
-                onChange: (value) {
+              SwitchListTile(
+                title: Text('Images'),
+                value: widget.prefs.getBool('key-images') ?? false,
+                onChanged: (value) {
                   setState(() {
-                    widget.prefs.setBool('key-video', value);
+                    if (widget.prefs.getBool('key-connected') ?? false) {
+                      configXML("images", value.toString()).then((v) {
+                        widget.prefs.setBool('key-images', value);
+                      });
+                    } else {
+                      showError();
+                    }
+                  });
+                }
+              ),
+              const Divider(
+                thickness: .5,
+                height: 0,
+              ),
+              SwitchListTile(
+                title: Text('Video'),
+                value: widget.prefs.getBool('key-video') ?? true,
+                onChanged: (value) {
+                  setState(() {
+                    if (widget.prefs.getBool('key-connected') ?? false) {
+                      configXML("video", value.toString()).then((v) {
+                        widget.prefs.setBool('key-video', value);
+                      });
+                    } else {
+                      showError();
+                    }
                   });
                 },
+              ),
+              const Divider(
+                thickness: .5,
+                height: 0,
               ),
             ]),
             SettingsGroup(title: 'Camera Setting', children: <Widget>[
               TextInputSettingsTile(
                 title: 'Width',
                 settingKey: 'key-width',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-width')?.toString() ?? '1440',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-width', value);
+                    configXML("width", value.toString()).then((v) {
+                      widget.prefs.setString('key-width', value);
+                    });
                   });
                 },
               ),
@@ -162,11 +195,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Height',
                 settingKey: 'key-height',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-height')?.toString() ?? '1080',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-height', value);
+                    configXML("height", value.toString()).then((v) {
+                      widget.prefs.setString('key-height', value);
+                    });
                   });
                 },
               ),
@@ -174,14 +210,18 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              SwitchSettingsTile(
-                title: 'Flip',
-                settingKey: 'key-flip',
-                defaultValue:
-                  widget.prefs.getBool('key-flip') ?? false,
-                onChange: (value) {
+              SwitchListTile(
+                title: Text('Flip'),
+                value: widget.prefs.getBool('key-flip') ?? false,
+                onChanged: (value) {
                   setState(() {
-                    widget.prefs.setBool('key-flip', value);
+                    if (widget.prefs.getBool('key-connected') ?? false) {
+                      configXML("flip", value.toString()).then((v) {
+                        widget.prefs.setBool('key-flip', value);
+                      });
+                    } else {
+                      showError();
+                    }
                   });
                 },
               ),
@@ -189,11 +229,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'FPS',
                 settingKey: 'key-fps',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-fps')?.toString() ?? '60',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-fps', value);
+                    configXML("fps", value.toString()).then((v) {
+                      widget.prefs.setString('key-fps', value);
+                    });
                   });
                 },
               ),
@@ -204,11 +247,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Exposure time',
                 settingKey: 'key-exposure-time',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-exposure-time')?.toString() ?? '3000',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-exposure-time', value);
+                    configXML("exposuretime", value.toString()).then((v) {
+                      widget.prefs.setString('key-exposure-time', value);
+                    });
                   });
                 },
               ),
@@ -219,11 +265,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Warmup time',
                 settingKey: 'key-warm-up-time',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-warm-up-time')?.toString() ?? '3000',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-warm-up-time', value);
+                    configXML("warmuptime", value.toString()).then((v) {
+                      widget.prefs.setString('key-warm-up-time', value);
+                    });
                   });
                 },
               ),
@@ -234,11 +283,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Image buffer',
                 settingKey: 'key-image-buffer',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-image-buffer')?.toString() ?? '10',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-image-buffer', value);
+                    configXML("imagebuffer", value.toString()).then((v) {
+                      widget.prefs.setString('key-image-buffer', value);
+                    });
                   });
                 },
               ),
@@ -249,11 +301,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Image max',
                 settingKey: 'key-image-max',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-image-max')?.toString() ?? '18000',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-image-max', value);
+                    configXML("imagemax", value.toString()).then((v) {
+                      widget.prefs.setString('key-image-max', value);
+                    });
                   });
                 },
               ),
@@ -266,11 +321,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Pixel format',
                 settingKey: 'key-pixel-format',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-pixel-format')?.toString() ?? 'BayerRGB',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-pixel-format', value);
+                    configXML("pixelformat", value.toString()).then((v) {
+                      widget.prefs.setString('key-pixel-format', value);
+                    });
                   });
                 },
               ),
@@ -281,11 +339,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Primary serial',
                 settingKey: 'key-primary-serial',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-primary-serial')?.toString() ?? '20010189',
                 onChange: (value) {
                   setState(() {
-                     widget.prefs.setString('key-primary-serial', value);
+                    configXML("primaryserial", value.toString()).then((v) {
+                      widget.prefs.setString('key-primary-serial', value);
+                    });
                   });
                 },
               ),
@@ -296,11 +357,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               TextInputSettingsTile(
                 title: 'Output Path',
                 settingKey: 'key-output-path',
+                enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
                   widget.prefs.get('key-output-path')?.toString() ?? '/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/',
                 onChange: (value) {
                   setState(() {
-                    widget.prefs.setString('key-output-path', value);
+                    configXML("outpath", value.toString()).then((v) {
+                      widget.prefs.setString('key-output-path', value);
+                    });
                   });
                 },
               ),
@@ -309,7 +373,28 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
         ));
   }
 
-  void _toggleSSHConnection(bool value) {
+  void showError () {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text(
+              'Connection error'),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK')),
+          ],
+        ));
+  }
+
+  Future<void> configXML(String tag, String value) {
+    return io.setConfiguration(tag, value);
+  }
+
+  void _toggleConnection(bool value) {
     bool connected = widget.prefs.getBool('key-connected') ?? false;
     if (widget.prefs.getString('key-server-ip-address') == '' || widget.prefs.getString('key-port') == '') {
       showDialog(
@@ -360,45 +445,38 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
       setState(() {
         var connected = widget.prefs.getBool('key-connected') ?? false;
         if (!connected) {
-          // connect to SSH server
+          // connect to server
           try {
-            ssh.connect(
-                host: widget.prefs.getString('key-server-ip-address') ?? 'localhost',
-                port: int.parse(widget.prefs.getString('key-port') ?? '22'),
-                username: 'rehablab-1',
-                passwordOrKey: 'rehab123',
-            ).then((res) {
-              if (res == 'session_connected') {
+            io.connect(
+              ip: widget.prefs.getString('key-server-ip-address') ??
+                  'localhost',
+              port: int.parse(widget.prefs.getString('key-port') ?? '3000'),
+            ).then((value) {
+              if (io.isConnected() ?? false) {
                 setState(() {
                   widget.prefs.setBool('key-connected', true);
                 });
+              } else {
+                showError();
               }
             });
-          } on PlatformException catch (e) {
-            showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Error'),
-                  content: const Text(
-                      'SSH Connection error'),
-                  actions: [
-                    TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('OK')),
-                  ],
-                ));
+          } on SocketException catch (e) {
+            print("caught 2");
+            showError();
           }
+            // print(io.isConnected());
         } else {
-          // disconnect from SSH server
-          widget.prefs.setBool('key-connected', false);
-          ssh.isConnected().then(
-                  (connected) {
-                if (connected) {
-                  ssh.disconnect();
-                }
+          // disconnect from server
+          if (io.isConnected() ?? false) {
+            io.disconnect().then((value) {
+              setState(() {
+                widget.prefs.setBool('key-connected', false);
               });
+            });
+          }
+          setState(() {
+            widget.prefs.setBool('key-connected', false);
+          });
         }
       });
     }

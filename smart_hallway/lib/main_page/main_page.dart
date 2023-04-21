@@ -1,10 +1,12 @@
+import 'dart:io';
+
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_stepper/stepper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_hallway/main_page/info_container.dart';
-import 'package:smart_hallway/util/ssh.dart';
+import 'package:smart_hallway/util/client.dart';
 import '../setting_page/setting.dart';
 import '../history_page/history.dart';
 import 'package:sqflite/sqflite.dart';
@@ -24,7 +26,6 @@ class _MainPageState extends State<MainPage> {
 
   bool start = false;
 
-  final _formKey = GlobalKey<FormState>();
   int _trialId = -1;
   final trialIdController = TextEditingController();
   bool trialIdValidate = false;
@@ -33,26 +34,16 @@ class _MainPageState extends State<MainPage> {
   final fileNameController = TextEditingController();
   String _comment = '';
   final commentController = TextEditingController();
-  final DESIGNATED_PATH = 'workspace/SmartHallway/Debug';
-  SSHConnection ssh = SSHConnection();
-
+  Client io = Client();
 
   bool numValidate = false;
   int _activeStep = 0;
   int _upperBound = 4;
-  CountDownController controller = CountDownController();
 
-  int min = 0;
-  final minController = TextEditingController();
-  final _minKey = GlobalKey<FormState>();
-  int sec = 0;
-  final secController = TextEditingController();
-  final _secKey = GlobalKey<FormState>();
+  String msg = '';
+  bool capture = false;
+  bool end = false;
 
-  bool _minInputError = false;
-  bool _secInputError = false;
-
-  bool _isConnected = false;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +62,7 @@ class _MainPageState extends State<MainPage> {
                   IconStepper(
                     icons: const [
                       Icon(Icons.contact_page),
-                      Icon(Icons.timer),
+                      // Icon(Icons.timer),
                       Icon(Icons.wifi_protected_setup_sharp),
                       Icon(Icons.thumb_up_outlined),
                     ],
@@ -160,10 +151,8 @@ class _MainPageState extends State<MainPage> {
       case 0:
         return _createInputForm();
       case 1:
-        return _createTimerForm();
+        return _createFilmingPage();
       case 2:
-        return _createTimerPage();
-      case 3:
         return _createAllSetPage();
       default:
         return Container();
@@ -252,74 +241,32 @@ class _MainPageState extends State<MainPage> {
     ));
   }
 
-  Widget _createTimerForm() {
+  Widget _createFilmingPage() {
     return SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
-            ),
-            Container(
-                width: MediaQuery.of(context).size.width / 1.18,
-                child: TextField(
-                  controller: minController,
-                  textAlign: TextAlign.left,
-                  scrollPadding: EdgeInsets.only(bottom: 40),
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Minutes',
-                    errorText: numValidate ? minErrorText : null,
-                  ),
-                  onTap:() {
-                    setState(() {
-                      numValidate = true;
-                    });
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      try {
-                        min = int.parse(value);
-                      } catch (e) {
-                        print('should not happen');
-                      }
-                    });
-                  },
-                )),
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
-            ),
-            Container(
-                width: MediaQuery.of(context).size.width / 1.18,
-                child: TextField(
-                  controller: secController,
-                  textAlign: TextAlign.left,
-                  scrollPadding: EdgeInsets.only(bottom: 40),
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Seconds',
-                    errorText: numValidate ? secErrorText : null,
-                  ),
-                  onTap:() {
-                    setState(() {
-                      numValidate = true;
-                    });
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      try {
-                        sec = int.parse(value);
-                      } catch (e) {
-                        print('should not happen');
-                      }
-                    });
-                  },
-                )
-            ),
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 50, 0, 0)
-            ),
-          ],
-        ));
+      child: Column(
+        children: [
+          Padding(
+              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 5, 0, 0)
+          ),
+          getCurrentPage(),
+          Padding(
+              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 10, 0, 0)
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget getCurrentPage() {
+    if (!capture && !end) {
+      return Text("Filming has not started ... ");
+    } else if (capture && !end) {
+      return Text("Filming is in progress ... ");
+    } else if (capture && end) {
+      return Text("Filming is waiting for the end ... ");
+    }
+
+    return Text("Something wrong ... ");
   }
 
   Widget _createAllSetPage() {
@@ -343,179 +290,201 @@ class _MainPageState extends State<MainPage> {
   }
 
 
-  Widget _createTimerPage() {
-    int duration = min * 60 + sec;
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-              padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.height / 15, 0, 0)
-          ),
-          Container(
-            child: CircularCountDownTimer(
-              width: MediaQuery.of(context).size.width / 3,
-              height: MediaQuery.of(context).size.height / 4,
-              duration: duration,
-              fillColor: Colors.green.shade100,
-              ringColor: Colors.green,
-              controller: controller,
-              onStart: () {
-                ssh.start(_fileName, min, sec).then((value) {
-                  ssh.moveTo(DESIGNATED_PATH).then((value) {
-                    ssh.startRecording();
-                  });
-                });
-              },
-              onComplete: () {
-                // send request through ssh
-                // ssh.endRecording().then((value) {}
-                // );
-                setState(() {
-                  _activeStep++;
-                });
-              },
-            ),
-          ),
-          Text("Filming in progress..."),
-
-        ],
-      ),
-    );
-  }
-
   _createButtons(int activeStep) {
     switch (activeStep) {
       case 0:
-        return Container(
-            width: 350,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextButton(
-                    onPressed: () {
-                      setState(() {
-                        start = false;
-                      });
-                    },
-                    child: Text('Cancel')),
-                TextButton(
-                    onPressed: () {
-                      setState(() {
-                        exist(int.parse(trialIdController.value.text)).then((value) {
-                          if (value.isEmpty) {
-                            if (_trialIdError() == -1 && _fileNameError() == -1) {
-                              _activeStep++;
-                            }
-                          } else {
-                            showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Error'),
-                                  content: const Text(
-                                      'The trial Id has been used'),
-                                  actions: [
-                                    TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: const Text('OK')),
-                                  ],
-                                ));
-                          }
-                        });
-                      });
-                    },
-                    child: Text('Continue')),
-              ],
-            ));
+        return firstPageButton();
       case 1:
-        return Row(
+        return secondPageButton();
+      case 2:
+        return thirdPageButton();
+      default:
+        return Container();
+    }
+  }
+
+  Widget firstPageButton() {
+    return Container(
+        width: 350,
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton(
                 onPressed: () {
                   setState(() {
-                    _activeStep--;
+                    start = false;
                   });
                 },
-                child: Text('Back')),
+                child: Text('Cancel')),
             TextButton(
                 onPressed: () {
                   setState(() {
-                    print(minErrorText);
-                    print(secErrorText);
-                    if (minErrorText == null && secErrorText == null) {
-                      _activeStep++;
-                      min = int.parse(minController.value.text);
-                      sec = int.parse(secController.value.text);
-                    }
+                    exist(int.parse(trialIdController.value.text)).then((value) {
+                      if (value.isEmpty) {
+                        if (_trialIdError() == -1 && _fileNameError() == -1) {
+                          print("set the file name");
+                          io.setFileName(_fileName).then((v) {
+                            _activeStep++;
+                          });
+                        }
+                      } else {
+                        showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Error'),
+                              content: const Text(
+                                  'The trial Id has been used'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text('OK')),
+                              ],
+                            ));
+                      }
+                    });
                   });
                 },
                 child: Text('Continue')),
           ],
-        );
-      case 2:
-        return TextButton(
+        ));
+  }
+
+  Widget secondPageButton() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        TextButton(
+          onPressed: () {
+            setState(() {
+              print('cancel');
+              _activeStep--;
+             });
+            },
+          child: Text('Cancel')),
+        capture ?
+        TextButton(
+            onPressed: () {
+              if (end) {
+                setState(() {
+                  io.end().then((value) {
+                    _activeStep++;
+                  });
+                });
+              }
+            },
+            child: end ? Text('end') : Text('waiting')
+        ) :
+        TextButton(
             onPressed: () {
               setState(() {
-                print('cancel');
-                _activeStep--;
+                Socket? socket = io.getSocket();
+                socket?.writeln("capture");
+                setState(() {
+                  capture = true;
+                });
+                socket?.listen((event) {
+                  String data = String.fromCharCodes(event);
+                  print(data);
+                  if (data == 'filming is waiting for ending ...') {
+                    setState(() {
+                      end = true;
+                    });
+                  }
+                  if (data == 'an error has occurred, please take a look on the server') {
+                    showErrorPage();
+                  }
+                }).onError((Object e) {
+                  handleError(e);
+                }
+                );
               });
             },
-            child: Text('Cancel'));
-      case 3:
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
+            child: Text('Start')
+          )
+        ]
+    );
+  }
+
+  void showErrorPage() {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text(
+              'Filming error, please take a look on server'),
+          actions: [
             TextButton(
                 onPressed: () {
-                  setState(() {
-                    _activeStep = 0;
-                    addToHistory();
-                    reset();
-                    if (widget.prefs.getBool('key-connected') == false) {
-                      showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Connection Error'),
-                            content:
-                            const Text('Please connect to the server before starting the filming'),
-                            actions: [
-                              TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    setState(() {
-                                      start = false;
-                                    });
-                                  },
-                                  child: const Text('OK')),
-                            ],
-                          ));
-                    }
-                  });
-                },
-                child: Text('Start over')),
-            TextButton(
-                onPressed: () {
+                  Navigator.of(context).pop();
                   setState(() {
                     _activeStep = 0;
                     start = false;
-                    addToHistory();
                     reset();
                   });
                 },
-                child: Text('Finish')),
+                child: const Text('OK')),
           ],
-        );
-      default:
-        return Container();
-    }
+        ));
+  }
+
+  void handleError(Object e) {
+    print((e as Exception).toString());
+  }
+
+  Widget thirdPageButton() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        TextButton(
+            onPressed: () {
+              setState(() {
+                _activeStep = 0;
+                addToHistory();
+                reset();
+                if (widget.prefs.getBool('key-connected') == false) {
+                  showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Connection Error'),
+                        content:
+                        const Text('Please connect to the server before starting the filming'),
+                        actions: [
+                          TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                setState(() {
+                                  start = false;
+                                });
+                              },
+                              child: const Text('OK')),
+                        ],
+                      ));
+                }
+              });
+            },
+            child: Text('Start over')),
+        TextButton(
+            onPressed: () {
+              setState(() {
+                _activeStep = 0;
+                start = false;
+                addToHistory();
+                reset();
+              });
+            },
+            child: Text('Finish')),
+      ],
+    );
   }
 
   void reset() {
     _trialId = -1;
     _fileName = '';
     _comment = '';
+    end = false;
+    capture = false;
   }
 
   void addToHistory() async{
@@ -545,10 +514,6 @@ class _MainPageState extends State<MainPage> {
       return 1;
     }
 
-    // bool res = await exist(int.parse(text));
-    // if (res) {
-    //   return 2;
-    // }
     return -1;
   }
 
@@ -559,10 +524,6 @@ class _MainPageState extends State<MainPage> {
       return 0;
     }
 
-    // bool res = await exist(int.parse(text));
-    // if (res) {
-    //   return 2;
-    // }
     return -1;
   }
 
@@ -579,16 +540,6 @@ class _MainPageState extends State<MainPage> {
       return 'Please enter numbers';
     }
 
-    // print('hhh');
-    //
-    //  exist(int.parse(text)).then((value) {
-    //   print(value);
-    //   print(value.isNotEmpty);
-    //   if (value.isNotEmpty) {
-    //     return 'trial Id has been used';
-    //   }
-    // });
-
   }
 
   String? get _fileNameErrorText {
@@ -596,38 +547,6 @@ class _MainPageState extends State<MainPage> {
 
     if (text.isEmpty) {
       return 'Please provide the file name';
-    }
-  }
-
-  String? get minErrorText {
-    final text = minController.value.text;
-    if (text.isEmpty) {
-      return 'Cannot be empty';
-    }
-    try {
-      int.parse(text);
-    } catch (e) {
-      return 'Please enter numbers';
-    }
-    int num = int.parse(text);
-    if (num < 0) {
-      return 'Please enter positive numbers or zero';
-    }
-  }
-
-  String? get secErrorText {
-    final text = secController.value.text;
-    if (text.isEmpty) {
-      return 'Cannot be empty';
-    }
-    try {
-      int.parse(text);
-    } catch (e) {
-      return 'Please enter numbers';
-    }
-    int num = int.parse(text);
-    if (num <= 0) {
-      return 'Please enter positive numbers';
     }
   }
 

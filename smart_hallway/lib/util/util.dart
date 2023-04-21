@@ -8,6 +8,9 @@ bool isNumeric(String s) {
 }
 
 bool isValidIpAddress(String ip) {
+  if (ip == 'localhost') {
+    return true;
+  }
   try {
     InternetAddress address = InternetAddress(ip);
     if (address.type == InternetAddressType.IPv4 || address.type == InternetAddressType.IPv6) {

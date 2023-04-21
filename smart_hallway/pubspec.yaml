@@ -48,6 +48,7 @@ dependencies:
   regexed_validator: ^2.0.0+1
   dartssh2: ^2.8.2
   ssh2: ^2.2.3
+  socket_io_client: ^2.0.1
 
 dev_dependencies:
   flutter_test:
