@@ -32,26 +32,30 @@ public class Server {
         try {
             ServerSocket ss = new ServerSocket(3000);
             System.out.println("run the server ...");
-            Socket s = ss.accept();
-            System.out.println("client has connected ... wait for the command");
-            try {
-                while (true) {
+            Socket s = null;
+            while (true) {
+                try {
+                    s = ss.accept();
+                    System.out.println("client has connected ... wait for the command");
                     BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    if (br.ready()) {
-                        String cmd = br.readLine();
-                        System.out.println(cmd);
-                        handleCommand(cmd, s);
+                    String line;
+                    while((line = br.readLine()) != null) {
+                        System.out.println(line);
+                        handleCommand(line, s);
+                    }
+                    s.close();
+                    System.out.println("client has left ...");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("server error ... ");
+                    if (s != null) {
+                        OutputStream outputStream = s.getOutputStream();
+                        outputStream.write(("an error has occurred, please take a look on the server").getBytes());
+                        outputStream.flush();
+                        outputStream.close();
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("error here");
-                OutputStream outputStream = s.getOutputStream();
-                outputStream.write(("an error has occurred, please take a look on the server").getBytes());
-                outputStream.flush();
-                outputStream.close();
             }
-            System.out.println("server error ... ");
         } catch (Exception e) {
             System.out.println("connection error ...");
             e.printStackTrace();
@@ -86,6 +90,7 @@ public class Server {
         Process p = rt.exec("./multicamera_capture");
         InputStream inputStream = p.getInputStream();
         OutputStream outputStream = p.getOutputStream();
+        InputStream errorStream = p.getErrorStream();
         String line;
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         while ((line = reader.readLine()) != null) {
