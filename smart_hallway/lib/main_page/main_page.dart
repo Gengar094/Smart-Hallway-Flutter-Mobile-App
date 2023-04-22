@@ -283,7 +283,7 @@ class _MainPageState extends State<MainPage> {
         Container(
             margin: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             child: const Text(
-                'You are all set! You should be able to see the data in the history page!')
+                'You are all set! You should be able to see the data in the history page if you press the "Finish" button. If you press the "Cancel" button, no record will be added, but the video is stored in the server!')
         ),
       ],
     );
@@ -392,8 +392,15 @@ class _MainPageState extends State<MainPage> {
                       end = true;
                     });
                   }
-                  if (data == 'an error has occurred, please take a look on the server') {
-                    showErrorPage();
+                  if (data == 'a server error has occurred, please take a look on the server') {
+                    showErrorPage(data);
+                    // todo
+                    io.disconnect().then((value) => {
+                      widget.prefs.setBool('key-connected', false)
+                    });
+                  }
+                  if (data == 'a filming error has occurred ... ') {
+                    showErrorPage(data);
                   }
                 }).onError((Object e) {
                   handleError(e);
@@ -407,13 +414,13 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  void showErrorPage() {
+  void showErrorPage(String msg) {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Error'),
-          content: const Text(
-              'Filming error, please take a look on server'),
+          content: Text(
+              msg),
           actions: [
             TextButton(
                 onPressed: () {
@@ -441,30 +448,11 @@ class _MainPageState extends State<MainPage> {
             onPressed: () {
               setState(() {
                 _activeStep = 0;
-                addToHistory();
                 reset();
-                if (widget.prefs.getBool('key-connected') == false) {
-                  showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Connection Error'),
-                        content:
-                        const Text('Please connect to the server before starting the filming'),
-                        actions: [
-                          TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                setState(() {
-                                  start = false;
-                                });
-                              },
-                              child: const Text('OK')),
-                        ],
-                      ));
-                }
+                start = false;
               });
             },
-            child: Text('Start over')),
+            child: Text('Cancel')),
         TextButton(
             onPressed: () {
               setState(() {
@@ -483,6 +471,11 @@ class _MainPageState extends State<MainPage> {
     _trialId = -1;
     _fileName = '';
     _comment = '';
+    fileNameController.text = '';
+    trialIdController.text = '';
+    commentController.text = '';
+    fileNameValidate = false;
+    trialIdValidate = false;
     end = false;
     capture = false;
   }

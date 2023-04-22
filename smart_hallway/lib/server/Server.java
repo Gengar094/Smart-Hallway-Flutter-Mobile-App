@@ -7,7 +7,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.*;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -36,21 +39,21 @@ public class Server {
             while (true) {
                 try {
                     s = ss.accept();
-                    System.out.println("client has connected ... wait for the command");
+                    System.out.println("client has connected ...");
                     BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
                     String line;
                     while((line = br.readLine()) != null) {
-                        System.out.println(line);
                         handleCommand(line, s);
+                        System.out.println("end of command ... wait for new command");
                     }
-                    s.close();
+                    // s.close();
                     System.out.println("client has left ...");
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("server error ... ");
                     if (s != null) {
                         OutputStream outputStream = s.getOutputStream();
-                        outputStream.write(("an error has occurred, please take a look on the server").getBytes());
+                        outputStream.write(("a server error has occurred, please take a look on the server").getBytes());
                         outputStream.flush();
                         outputStream.close();
                     }
@@ -77,13 +80,14 @@ public class Server {
                 String[] ss = cmd.split("\\s+");
                 setVideoParameters(ss[1], ss[2]);
             } else {
-                end();
+                
             }
         }
     }
 
     private static void capture(Socket client) throws Exception{
-        int counter = 0;
+    
+        AtomicBoolean errorFlag = new AtomicBoolean(false);
         System.out.println("you have started the capture process ... ");
         Runtime rt = Runtime.getRuntime();
 
@@ -91,29 +95,80 @@ public class Server {
         InputStream inputStream = p.getInputStream();
         OutputStream outputStream = p.getOutputStream();
         InputStream errorStream = p.getErrorStream();
-        String line;
+    
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-            if (line.equals("Provide the name of the trial. [ex: test1] : ")) {
-                outputStream.write((filename + "\n").getBytes());
-                outputStream.flush();
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(errorStream));
+
+        Thread inputThread = new Thread(() -> {
+            int counter = 0;
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                    if (!errorFlag.get()) {
+                        if (line.equals("Provide the name of the trial. [ex: test1] : ")) {
+                            outputStream.write((filename + "\n").getBytes());
+                            outputStream.flush();
+                        }
+                        if (line.equals("*** CAMERAS READY ***")) {
+                            if (counter < 3) {
+                                counter++;
+                            } else {
+                                System.out.println("program wait");
+                                OutputStream out = client.getOutputStream();
+                                out.write(("filming is waiting for ending ...").getBytes());
+                                out.flush();
+                                BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                                String input;
+                                while ((input = in.readLine()) != null) {
+                                    if (input.equals("end")) {
+                                        System.out.println((KeyEvent.VK_ESCAPE));
+                                        outputStream.write((KeyEvent.VK_ESCAPE));
+                                        outputStream.flush();
+                                        while ((line = reader.readLine()) != null) {
+                                            System.out.println(line);
+                                        }
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        Thread.currentThread().interrupt();
+                        System.out.println("a filming error has occurred ... ");
+                        OutputStream out = client.getOutputStream();
+                        out.write(("a filming error has occurred ... ").getBytes());
+                        out.flush();
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            if (line.equals("*** CAMERAS READY ***")) {
-                if (counter < 3) {
-                    counter++;
-                    System.out.println(counter);
-                } else {
-                    System.out.println("program wait");
-                    OutputStream out = client.getOutputStream();
-                    out.write(("filming is waiting for ending ...").getBytes());
-                    out.flush();
-                    // out.close();
+    
+        });
+
+        Thread errorThread = new Thread(() -> {
+            String line;
+            try {
+                while ((line = errorReader.readLine()) != null) {
+                    errorFlag.set(true);
+                    System.out.println(line);
                     break;
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        }
-    }
+        });
+
+        inputThread.start();
+        errorThread.start();
+
+        inputThread.join();
+        errorThread.join();
+
+    }   
 
     private static void setVideoParameters(String tag, String value) throws Exception{
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -141,19 +196,4 @@ public class Server {
         Server.filename = filename;
     }
 
-
-    private static void end() throws AWTException{
-        try {
-            System.out.println("end is presseed");
-            Robot robot = new Robot();
-            // robot.keyPress(KeyEvent.VK_ESCAPE);
-            // robot.keyPress(KeyEvent.VK_ENTER);
-            // robot.keyRelease(KeyEvent.VK_ENTER);
-            // robot.keyRelease(KeyEvent.VK_ESCAPE);
-            robot.keyPress(KeyEvent.VK_1);
-        } catch (AWTException e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
 }
