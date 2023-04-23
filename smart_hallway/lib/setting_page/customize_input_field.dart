@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class CustomTextInputField extends StatefulWidget {
   final String title;
-  final String value;
+  String value;
   final Function(String) onChange;
   final Function() showDialog;
 
@@ -31,7 +31,7 @@ class _CustomTextInputFieldState extends State<CustomTextInputField> {
       _showError();
     } else {
       TextEditingController _controller = TextEditingController(
-          text: _fieldValue);
+          text: widget.value);
 
       return showDialog(
         context: context,
@@ -42,7 +42,7 @@ class _CustomTextInputFieldState extends State<CustomTextInputField> {
               controller: _controller,
               onChanged: (newValue) {
                 setState(() {
-                  _fieldValue = newValue;
+                  widget.value = newValue;
                 });
               },
               decoration: InputDecoration(
@@ -58,7 +58,7 @@ class _CustomTextInputFieldState extends State<CustomTextInputField> {
               ),
               TextButton(
                 onPressed: () {
-                  widget.onChange(_fieldValue);
+                  widget.onChange(widget.value);
                   Navigator.of(context).pop();
                 },
                 child: Text('Save'),
@@ -91,7 +91,7 @@ class _CustomTextInputFieldState extends State<CustomTextInputField> {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(widget.title),
-      subtitle: Text(_fieldValue),
+      subtitle: Text(widget.value),
       onTap: () {
         _showEditDialog(context);
       },

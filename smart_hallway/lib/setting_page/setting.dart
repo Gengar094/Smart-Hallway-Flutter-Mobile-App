@@ -47,19 +47,18 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
 
   @override
   void dispose() {
-    if (widget.prefs.getBool('key-connected') ?? false) {
-      io.disconnect().then((value) {
-          widget.prefs.setBool('key-connected', false);
-      });
-    }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      widget.prefs.setBool('key-connected', false);
-      print('connection closed');
+      if (widget.prefs.getBool('key-connected') ?? false) {
+        io.disconnect().then((value) {
+          widget.prefs.setBool('key-connected', false);
+        });
+      }
     }
   }
 
@@ -566,7 +565,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
       imageBuffer = root.findElements('imagebuffer').single.text;
       widget.prefs.setString('key-image-buffer', imageBuffer);
       imageMax = root.findElements('imagemax').single.text;
-      widget.prefs.setString('key-image-max', imageBuffer);
+      widget.prefs.setString('key-image-max', imageMax);
       pixelFormat = root.findElements('pixelformat').single.text;
       widget.prefs.setString('key-pixel-format', pixelFormat);
       primarySerial = root.findElements('primaryserial').single.text;

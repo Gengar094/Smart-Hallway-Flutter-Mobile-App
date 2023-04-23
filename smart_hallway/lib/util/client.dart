@@ -71,7 +71,6 @@ class Client {
     await _socket?.flush();
 
     stream.listen((data) {
-        print("herer");
         print(String.fromCharCodes(data));
         if (!completer.isCompleted) {
           completer.complete(String.fromCharCodes(data));
