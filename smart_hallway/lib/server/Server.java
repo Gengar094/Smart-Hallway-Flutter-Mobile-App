@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -79,8 +80,9 @@ public class Server {
             } else if (cmd.startsWith("set")) {
                 String[] ss = cmd.split("\\s+");
                 setVideoParameters(ss[1], ss[2]);
-            } else {
-                
+            } else if (cmd.equals("fetchSetting")) {
+                System.out.println("here fetch");
+                fetchSetting(s);
             }
         }
     }
@@ -194,6 +196,22 @@ public class Server {
 
     private static void setFilename(String filename) {
         Server.filename = filename;
+    }
+
+    private static void fetchSetting(Socket client) throws IOException{
+        BufferedReader in = new BufferedReader(new FileReader(SETTING_PATH));
+        OutputStreamWriter out = new OutputStreamWriter(client.getOutputStream());
+        StringBuilder sb = new StringBuilder();
+        String line;
+
+        while((line = in.readLine()) != null) {
+            sb.append(line);
+        }
+        in.close();
+        out.write(sb.toString());
+        out.flush();
+
+    
     }
 
 }

@@ -384,7 +384,7 @@ class _MainPageState extends State<MainPage> {
                 setState(() {
                   capture = true;
                 });
-                socket?.listen((event) {
+                io.stream.listen((event) {
                   String data = String.fromCharCodes(event);
                   print(data);
                   if (data == 'filming is waiting for ending ...') {

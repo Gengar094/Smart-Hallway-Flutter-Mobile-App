@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 class Client {
 
   Socket? _socket;
   Client._internal();
+  late Stream<Uint8List> stream;
   static final Client _singleton = Client._internal();
 
   factory Client() {
@@ -17,6 +20,7 @@ class Client {
   }) async {
     print(ip);
     _socket = await Socket.connect(ip, port);
+    stream = _socket!.asBroadcastStream();
   }
 
   bool? isConnected() {
@@ -58,5 +62,22 @@ class Client {
   // bad design ... should consider a workaround
   Socket? getSocket() {
     return _socket;
+  }
+
+
+  Future<String> fetchSetting() async {
+    var completer = Completer<String>();
+    _socket?.write('fetchSetting\n');
+    await _socket?.flush();
+
+    stream.listen((data) {
+        print("herer");
+        print(String.fromCharCodes(data));
+        if (!completer.isCompleted) {
+          completer.complete(String.fromCharCodes(data));
+        }
+    });
+
+    return completer.future;
   }
 }

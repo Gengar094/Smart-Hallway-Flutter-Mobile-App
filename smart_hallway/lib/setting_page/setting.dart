@@ -1,4 +1,6 @@
 
+import 'package:smart_hallway/main.dart';
+import 'package:xml/xml.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,22 @@ class SettingPage extends StatefulWidget {
 class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
   Client io = Client();
   String? config;
+  bool verbose = prefs.getBool('key-verbose') ?? false;
+  bool timestamps = prefs.getBool('key-timestamp') ?? false;
+  bool images = prefs.getBool('key-images') ?? false;
+  bool video = prefs.getBool('key-video') ?? false;
+  String width =  prefs.get('key-width')?.toString() ?? '1440';
+  String height = prefs.get('key-height')?.toString() ?? '1080';
+  bool flip = prefs.getBool('key-flip') ?? false;
+  String fps = prefs.getString('key-fps')?.toString() ?? '60';
+  String exposureTime = prefs.getString('key-exposure-time')?.toString() ?? '3000';
+  String warmupTime = prefs.getString('key-warm-up-time')?.toString() ?? '3000';
+  String imageBuffer = prefs.getString('key-image-buffer')?.toString() ?? '10';
+  String imageMax = prefs.getString('key-image-max')?.toString() ?? '18000';
+  String pixelFormat = prefs.getString('key-pixel-format')?.toString() ?? 'BayerRGB';
+  String primarySerial = prefs.getString('key-primary-serial')?.toString() ?? '20010189';
+  String outputPath = prefs.getString('key-output-path')?.toString() ?? '/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/';
+
 
   @override
   void initState() {
@@ -98,12 +116,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             SettingsGroup(title: 'Recording Setting', children: <Widget>[
               SwitchListTile(
                 title: Text('Verbose'),
-                value: widget.prefs.getBool('key-verbose') ?? false,
+                value: verbose,
                 onChanged: (value) {
                   setState(() {
                     if (widget.prefs.getBool('key-connected') ?? false) {
                       configXML("verbose", value.toString()).then((v) {
                         widget.prefs.setBool('key-verbose', value);
+                        verbose = value;
                       });
                     } else {
                       showError();
@@ -117,12 +136,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               ),
               SwitchListTile(
                 title: Text('Timestamp'),
-                value: widget.prefs.getBool('key-timestamp') ?? false,
+                value: timestamps,
                 onChanged: (value) {
                   setState(() {
                     if (widget.prefs.getBool('key-connected') ?? false) {
                       configXML("timestamps", value.toString()).then((v) {
                         widget.prefs.setBool('key-timestamp', value);
+                        timestamps = value;
                       });
                     } else {
                       showError();
@@ -136,12 +156,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               ),
               SwitchListTile(
                 title: Text('Images'),
-                value: widget.prefs.getBool('key-images') ?? false,
+                value: images,
                 onChanged: (value) {
                   setState(() {
                     if (widget.prefs.getBool('key-connected') ?? false) {
                       configXML("images", value.toString()).then((v) {
                         widget.prefs.setBool('key-images', value);
+                        images = value;
                       });
                     } else {
                       showError();
@@ -155,12 +176,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               ),
               SwitchListTile(
                 title: Text('Video'),
-                value: widget.prefs.getBool('key-video') ?? true,
+                value: video,
                 onChanged: (value) {
                   setState(() {
                     if (widget.prefs.getBool('key-connected') ?? false) {
                       configXML("video", value.toString()).then((v) {
                         widget.prefs.setBool('key-video', value);
+                        video = value;
                       });
                     } else {
                       showError();
@@ -179,11 +201,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-width',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-width')?.toString() ?? '1440',
+                  width,
                 onChange: (value) {
                   setState(() {
                     configXML("width", value.toString()).then((v) {
                       widget.prefs.setString('key-width', value);
+                      width = value;
                     });
                   });
                 },
@@ -197,11 +220,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-height',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-height')?.toString() ?? '1080',
+                  height,
                 onChange: (value) {
                   setState(() {
                     configXML("height", value.toString()).then((v) {
                       widget.prefs.setString('key-height', value);
+                      height = value;
                     });
                   });
                 },
@@ -212,12 +236,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               ),
               SwitchListTile(
                 title: Text('Flip'),
-                value: widget.prefs.getBool('key-flip') ?? false,
+                value: flip,
                 onChanged: (value) {
                   setState(() {
                     if (widget.prefs.getBool('key-connected') ?? false) {
                       configXML("flip", value.toString()).then((v) {
                         widget.prefs.setBool('key-flip', value);
+                        flip = value;
                       });
                     } else {
                       showError();
@@ -225,17 +250,21 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                   });
                 },
               ),
-
+              const Divider(
+                thickness: .5,
+                height: 0,
+              ),
               TextInputSettingsTile(
                 title: 'FPS',
                 settingKey: 'key-fps',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-fps')?.toString() ?? '60',
+                  fps,
                 onChange: (value) {
                   setState(() {
                     configXML("fps", value.toString()).then((v) {
                       widget.prefs.setString('key-fps', value);
+                      fps = value;
                     });
                   });
                 },
@@ -249,11 +278,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-exposure-time',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-exposure-time')?.toString() ?? '3000',
+                  exposureTime,
                 onChange: (value) {
                   setState(() {
                     configXML("exposuretime", value.toString()).then((v) {
                       widget.prefs.setString('key-exposure-time', value);
+                      exposureTime = value;
                     });
                   });
                 },
@@ -267,11 +297,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-warm-up-time',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-warm-up-time')?.toString() ?? '3000',
+                  warmupTime,
                 onChange: (value) {
                   setState(() {
                     configXML("warmuptime", value.toString()).then((v) {
                       widget.prefs.setString('key-warm-up-time', value);
+                      warmupTime = value;
                     });
                   });
                 },
@@ -285,11 +316,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-image-buffer',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-image-buffer')?.toString() ?? '10',
+                  imageBuffer,
                 onChange: (value) {
                   setState(() {
                     configXML("imagebuffer", value.toString()).then((v) {
                       widget.prefs.setString('key-image-buffer', value);
+                      imageBuffer = value;
                     });
                   });
                 },
@@ -303,11 +335,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-image-max',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-image-max')?.toString() ?? '18000',
+                  imageMax,
                 onChange: (value) {
                   setState(() {
                     configXML("imagemax", value.toString()).then((v) {
                       widget.prefs.setString('key-image-max', value);
+                      imageMax = value;
                     });
                   });
                 },
@@ -323,11 +356,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-pixel-format',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-pixel-format')?.toString() ?? 'BayerRGB',
+                  pixelFormat,
                 onChange: (value) {
                   setState(() {
                     configXML("pixelformat", value.toString()).then((v) {
                       widget.prefs.setString('key-pixel-format', value);
+                      pixelFormat = value;
                     });
                   });
                 },
@@ -341,11 +375,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-primary-serial',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-primary-serial')?.toString() ?? '20010189',
+                 primarySerial,
                 onChange: (value) {
                   setState(() {
                     configXML("primaryserial", value.toString()).then((v) {
                       widget.prefs.setString('key-primary-serial', value);
+                      primarySerial = value;
                     });
                   });
                 },
@@ -359,11 +394,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 settingKey: 'key-output-path',
                 enabled: widget.prefs.getBool('key-connected') ?? false,
                 initialValue:
-                  widget.prefs.get('key-output-path')?.toString() ?? '/media/rehablab-1/agxSSD1/spinnaker-captures/multicam_captures/',
+                  outputPath,
                 onChange: (value) {
                   setState(() {
                     configXML("outpath", value.toString()).then((v) {
                       widget.prefs.setString('key-output-path', value);
+                      outputPath = value;
                     });
                   });
                 },
@@ -455,13 +491,14 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               if (io.isConnected() ?? false) {
                 setState(() {
                   widget.prefs.setBool('key-connected', true);
+                    fetchLocalSetting().then((value) {
+                  });
                 });
               } else {
                 showError();
               }
             });
           } on SocketException catch (e) {
-            print("caught 2");
             showError();
           }
             // print(io.isConnected());
@@ -480,6 +517,48 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
         }
       });
     }
+  }
+
+  Future<void> fetchLocalSetting() async {
+    Future<String> future = io.fetchSetting();
+    await future.then((xmlStr) {
+      XmlDocument xmlDocument = XmlDocument.parse(xmlStr);
+      XmlElement root = xmlDocument.rootElement;
+
+      verbose = root.findElements('verbose').single.text == 'true';
+      widget.prefs.setBool('key-verbose', verbose);
+      timestamps = root.findElements('timestamps').single.text == 'true';
+      widget.prefs.setBool('key-timestamp', timestamps);
+      video = root.findElements('video').single.text == 'true';
+      widget.prefs.setBool('key-video', video);
+      images = root.findElements('images').single.text == 'true';
+      widget.prefs.setBool('key-images', images);
+
+      width = root.findElements('width').single.text;
+      widget.prefs.setString('key-width', width);
+      height = root.findElements('height').single.text;
+      widget.prefs.setString('key-height', height);
+      flip = root.findElements('flip').single.text == 'true';
+      widget.prefs.setBool('key-flip', flip);
+      fps = root.findElements('fps').single.text;
+      widget.prefs.setString('key-fps', fps);
+      exposureTime = root.findElements('exposuretime').single.text;
+      widget.prefs.setString('key-exposure-time', exposureTime);
+      warmupTime = root.findElements('warmuptime').single.text;
+      widget.prefs.setString('key-warm-up-time', warmupTime);
+      imageBuffer = root.findElements('imagebuffer').single.text;
+      widget.prefs.setString('key-image-buffer', imageBuffer);
+      imageMax = root.findElements('imagemax').single.text;
+      widget.prefs.setString('key-image-max', imageBuffer);
+      pixelFormat = root.findElements('pixelformat').single.text;
+      widget.prefs.setString('key-pixel-format', pixelFormat);
+      primarySerial = root.findElements('primaryserial').single.text;
+      widget.prefs.setString('key-primary-serial', primarySerial);
+      outputPath = root.findElements('outpath').single.text;
+      widget.prefs.setString('key-output-path', outputPath);
+    });
+
+
   }
 
 
