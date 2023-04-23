@@ -8,6 +8,7 @@ import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
 import '../util/client.dart';
 import '../util/util.dart';
+import 'customize_input_field.dart';
 
 class SettingPage extends StatefulWidget {
   final SharedPreferences prefs;
@@ -46,7 +47,11 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    if (widget.prefs.getBool('key-connected') ?? false) {
+      io.disconnect().then((value) {
+          widget.prefs.setBool('key-connected', false);
+      });
+    }
     super.dispose();
   }
 
@@ -196,12 +201,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               ),
             ]),
             SettingsGroup(title: 'Camera Setting', children: <Widget>[
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Width',
-                settingKey: 'key-width',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  width,
+                value: width,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("width", value.toString()).then((v) {
@@ -215,12 +220,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Height',
-                settingKey: 'key-height',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  height,
+                value: height,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("height", value.toString()).then((v) {
@@ -254,12 +259,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'FPS',
-                settingKey: 'key-fps',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  fps,
+                value: fps,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("fps", value.toString()).then((v) {
@@ -273,12 +278,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Exposure time',
-                settingKey: 'key-exposure-time',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  exposureTime,
+                value: exposureTime,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("exposuretime", value.toString()).then((v) {
@@ -292,12 +297,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Warmup time',
-                settingKey: 'key-warm-up-time',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  warmupTime,
+                value: warmupTime,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("warmuptime", value.toString()).then((v) {
@@ -311,12 +316,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Image buffer',
-                settingKey: 'key-image-buffer',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  imageBuffer,
+                value: imageBuffer,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("imagebuffer", value.toString()).then((v) {
@@ -330,12 +335,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Image max',
-                settingKey: 'key-image-max',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  imageMax,
+                value: imageMax,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("imagemax", value.toString()).then((v) {
@@ -351,12 +356,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
               height: 0,
             ),
             SettingsGroup(title: 'Other', children: <Widget>[
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Pixel format',
-                settingKey: 'key-pixel-format',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  pixelFormat,
+                value: pixelFormat,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("pixelformat", value.toString()).then((v) {
@@ -370,12 +375,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Primary serial',
-                settingKey: 'key-primary-serial',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                 primarySerial,
+                value: primarySerial,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("primaryserial", value.toString()).then((v) {
@@ -389,12 +394,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                 thickness: .5,
                 height: 0,
               ),
-              TextInputSettingsTile(
+              CustomTextInputField(
                 title: 'Output Path',
-                settingKey: 'key-output-path',
-                enabled: widget.prefs.getBool('key-connected') ?? false,
-                initialValue:
-                  outputPath,
+                value: outputPath,
+                showDialog: () {
+                  return showDialogLogic();
+                },
                 onChange: (value) {
                   setState(() {
                     configXML("outpath", value.toString()).then((v) {
@@ -407,6 +412,18 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             ]),
           ],
         ));
+  }
+
+  bool showDialogLogic() {
+    if (widget.prefs.getBool('key-connected') != null) {
+      if (!widget.prefs.getBool('key-connected')!) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
   }
 
   void showError () {

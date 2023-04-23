@@ -1,9 +1,12 @@
 import 'package:app_bar_with_search_switch/app_bar_with_search_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:expansion_tile_card/expansion_tile_card.dart';
+import 'package:smart_hallway/history_page/report.dart';
 import 'package:smart_hallway/model/history_item.dart';
+import 'package:smart_hallway/util/client.dart';
 import '../history_page/save.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:csv/csv.dart';
 
 class HistoryPage extends StatefulWidget {
   final Database db;
@@ -26,6 +29,7 @@ class _HistoryPageState extends State<HistoryPage> {
   List<HistoryItem> savedList = List.empty(growable: true);
 
   List<HistoryItem> resultList = [];
+  Client io = Client();
 
   @override
   void initState() {
@@ -151,10 +155,10 @@ class _HistoryPageState extends State<HistoryPage> {
                     buttonPadding: EdgeInsets.all(0),
                     children: [
                       item.saved
-                          ? _createButton("Unsave", item.trialId)
-                          : _createButton("Save", item.trialId),
-                      _createButton("Report", item.trialId),
-                      _createButton("Delete", item.trialId),
+                          ? _createButton("Unsave", item.trialId, item.fileName)
+                          : _createButton("Save", item.trialId, item.fileName),
+                      _createButton("Report", item.trialId, item.fileName),
+                      _createButton("Delete", item.trialId, item.fileName),
                     ],
                   )
                 ],
@@ -162,7 +166,7 @@ class _HistoryPageState extends State<HistoryPage> {
             }));
   }
 
-  Widget _createButton(String type, int trialId) {
+  Widget _createButton(String type, int trialId, String filename) {
     IconData icon = type == 'Save'
         ? Icons.star_border
         : type == 'Unsave'
@@ -184,7 +188,33 @@ class _HistoryPageState extends State<HistoryPage> {
             _unsave(trialId);
           });
         } else {
-          _fetchReport(trialId);
+          // _fetchReport(trialId);
+          if (io.isConnected() ?? true) {
+            io.fetchReport(filename).then((value) {
+              if (value == 'file is not found') {
+                _showNotExist();
+              } else {
+                final csv = const CsvToListConverter().convert(value, eol: '\n');
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (context) => CSVDataTable(data: csv)));
+              }
+            });
+          } else {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Error'),
+                  content: const Text(
+                      'Connection error'),
+                  actions: [
+                    TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('OK')),
+                  ],
+                ));
+          }
         }
       },
       child: Column(
@@ -252,9 +282,6 @@ class _HistoryPageState extends State<HistoryPage> {
     });
   }
 
-  _fetchReport(int trialId) {
-    print("Report is downloaded and ready to be viewed.");
-  }
 
   void filterItems(String text) {
     resultList =
@@ -295,4 +322,21 @@ class _HistoryPageState extends State<HistoryPage> {
     return dataList.map((data) => HistoryItem.fromMap(data)).toList();
   }
 
+  void _showNotExist() {
+    showDialog(
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text(
+              'File does not exist, please check the server if the report has been generated'),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK')),
+          ],
+        ), context: context);
+  }
+
 }
+

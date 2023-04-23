@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,7 @@ import java.awt.event.KeyEvent;
 public class Server {
     private static String filename = "";
     private static String SETTING_PATH = "config.xml";
+    private static String REPORT_PATH = "";
     public static void main(String[] args) {
         try {
             ServerSocket ss = new ServerSocket(3000);
@@ -81,8 +83,11 @@ public class Server {
                 String[] ss = cmd.split("\\s+");
                 setVideoParameters(ss[1], ss[2]);
             } else if (cmd.equals("fetchSetting")) {
-                System.out.println("here fetch");
                 fetchSetting(s);
+            } else if (cmd.startsWith("fetch")) {
+                System.out.println("fetch report");
+                String[] ss = cmd.split("\\s+");
+                fetchReport(s, ss[1]);
             }
         }
     }
@@ -210,8 +215,27 @@ public class Server {
         in.close();
         out.write(sb.toString());
         out.flush();
+    }
 
-    
+    private static void fetchReport(Socket client, String filename) throws IOException {
+        OutputStreamWriter out = new OutputStreamWriter(client.getOutputStream());
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(REPORT_PATH + filename + ".csv"));
+            StringBuilder sb = new StringBuilder();
+            String line;
+
+            while ((line = in.readLine()) != null) {
+                sb.append(line);
+                sb.append("\n");
+            }
+            System.out.println((sb.toString()));
+            in.close();
+            out.write(sb.toString());
+            out.flush();
+        } catch (FileNotFoundException e) {
+            out.write("file is not found");
+            out.flush();
+        }   
     }
 
 }

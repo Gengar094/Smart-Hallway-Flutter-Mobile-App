@@ -1,6 +1,9 @@
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:expansion_tile_card/expansion_tile_card.dart';
+import 'package:smart_hallway/history_page/report.dart';
 import 'package:smart_hallway/model/history_item.dart';
+import 'package:smart_hallway/util/client.dart';
 import '../history_page/history.dart';
 
 class savedPage extends StatefulWidget {
@@ -20,6 +23,8 @@ class savedPage extends StatefulWidget {
 }
 
 class _savedPageState extends State<savedPage> {
+  Client io = Client();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,9 +73,9 @@ class _savedPageState extends State<savedPage> {
                   alignment: MainAxisAlignment.spaceAround,
                   buttonPadding: EdgeInsets.all(0),
                   children: [
-                    _createButton("Unsave", item.trialId),
-                    _createButton("Report", item.trialId),
-                    _createButton("Delete", item.trialId),
+                    _createButton("Unsave", item.trialId, item.fileName),
+                    _createButton("Report", item.trialId, item.fileName),
+                    _createButton("Delete", item.trialId, item.fileName),
                   ],
                 )
               ],
@@ -79,7 +84,7 @@ class _savedPageState extends State<savedPage> {
     );
   }
 
-  _createButton(String type, trialId) {
+  _createButton(String type, trialId, String filename) {
     IconData icon = type == 'Unsave'
         ? Icons.star
         : type == 'Report'
@@ -97,7 +102,32 @@ class _savedPageState extends State<savedPage> {
             widget.parentUnsave(trialId);
           });
         } else {
-          _fetchReport(trialId);
+          if (io.isConnected() ?? true) {
+            io.fetchReport(filename).then((value) {
+              if (value == 'file is not found') {
+                _showNotExist();
+              } else {
+                final csv = const CsvToListConverter().convert(value, eol: '\n');
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (context) => CSVDataTable(data: csv)));
+              }
+            });
+          } else {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Error'),
+                  content: const Text(
+                      'Connection error'),
+                  actions: [
+                    TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('OK')),
+                  ],
+                ));
+          }
         }
       },
       child: Column(
@@ -128,7 +158,20 @@ class _savedPageState extends State<savedPage> {
     widget.savedList.removeWhere((element) => element.trialId == trialId);
   }
 
-  void _fetchReport(trialId) {
-    print("Reporst is downloaded and ready to be viewd");
+
+  void _showNotExist() {
+    showDialog(
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text(
+              'File does not exist, please check the server if the report has been generated'),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK')),
+          ],
+        ), context: context);
   }
 }

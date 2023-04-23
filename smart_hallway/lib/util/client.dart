@@ -80,4 +80,19 @@ class Client {
 
     return completer.future;
   }
+
+  Future<String> fetchReport(String filename) async {
+    var completer = Completer<String>();
+    _socket?.write('fetch $filename\n');
+    await _socket?.flush();
+
+    stream.listen((data) {
+      print(String.fromCharCodes(data));
+      if (!completer.isCompleted) {
+        completer.complete(String.fromCharCodes(data));
+      }
+    });
+
+    return completer.future;
+  }
 }
