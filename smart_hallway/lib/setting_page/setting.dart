@@ -129,7 +129,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                         verbose = value;
                       });
                     } else {
-                      showError();
+                      showError('Not connected to server.');
                     }
                   });
                 },
@@ -149,7 +149,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                         timestamps = value;
                       });
                     } else {
-                      showError();
+                      showError('Not connected to server.');
                     }
                   });
                 },
@@ -169,7 +169,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                         images = value;
                       });
                     } else {
-                      showError();
+                      showError('Not connected to server.');
                     }
                   });
                 }
@@ -189,7 +189,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                         video = value;
                       });
                     } else {
-                      showError();
+                      showError('Not connected to server.');
                     }
                   });
                 },
@@ -249,7 +249,7 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                         flip = value;
                       });
                     } else {
-                      showError();
+                      showError('Not connected to server.');
                     }
                   });
                 },
@@ -425,13 +425,13 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
     }
   }
 
-  void showError () {
+  void showError (String msg) {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Error'),
-          content: const Text(
-              'Connection error'),
+          content: Text(
+              msg),
           actions: [
             TextButton(
                 onPressed: () {
@@ -494,12 +494,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             ],
           ));
     } else {
-      setState(() {
+      setState(() async {
         var connected = widget.prefs.getBool('key-connected') ?? false;
         if (!connected) {
           // connect to server
           try {
-            io.connect(
+            await io.connect(
               ip: widget.prefs.getString('key-server-ip-address') ??
                   'localhost',
               port: int.parse(widget.prefs.getString('key-port') ?? '3000'),
@@ -511,11 +511,11 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
                   });
                 });
               } else {
-                showError();
+                showError('Not able to connect, please make sure the server is running on the proper ip and port.');
               }
             });
-          } on SocketException catch (e) {
-            showError();
+          } catch (e) {
+            showError('Not able to connect, please make sure the server is running on the proper ip and port.');
           }
             // print(io.isConnected());
         } else {
