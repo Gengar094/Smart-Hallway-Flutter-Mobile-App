@@ -538,40 +538,44 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
   Future<void> fetchLocalSetting() async {
     Future<String> future = io.fetchSetting();
     await future.then((xmlStr) {
-      XmlDocument xmlDocument = XmlDocument.parse(xmlStr);
-      XmlElement root = xmlDocument.rootElement;
+      if (xmlStr == 'file is not found') {
+        showError('Configuration file is not found. Use the default configuration now. Please make sure the SETTING_PATH in the server is properly set');
+      } else {
+        XmlDocument xmlDocument = XmlDocument.parse(xmlStr);
+        XmlElement root = xmlDocument.rootElement;
 
-      verbose = root.findElements('verbose').single.text == 'true';
-      widget.prefs.setBool('key-verbose', verbose);
-      timestamps = root.findElements('timestamps').single.text == 'true';
-      widget.prefs.setBool('key-timestamp', timestamps);
-      video = root.findElements('video').single.text == 'true';
-      widget.prefs.setBool('key-video', video);
-      images = root.findElements('images').single.text == 'true';
-      widget.prefs.setBool('key-images', images);
+        verbose = root.findElements('verbose').single.text == 'true';
+        widget.prefs.setBool('key-verbose', verbose);
+        timestamps = root.findElements('timestamps').single.text == 'true';
+        widget.prefs.setBool('key-timestamp', timestamps);
+        video = root.findElements('video').single.text == 'true';
+        widget.prefs.setBool('key-video', video);
+        images = root.findElements('images').single.text == 'true';
+        widget.prefs.setBool('key-images', images);
 
-      width = root.findElements('width').single.text;
-      widget.prefs.setString('key-width', width);
-      height = root.findElements('height').single.text;
-      widget.prefs.setString('key-height', height);
-      flip = root.findElements('flip').single.text == 'true';
-      widget.prefs.setBool('key-flip', flip);
-      fps = root.findElements('fps').single.text;
-      widget.prefs.setString('key-fps', fps);
-      exposureTime = root.findElements('exposuretime').single.text;
-      widget.prefs.setString('key-exposure-time', exposureTime);
-      warmupTime = root.findElements('warmuptime').single.text;
-      widget.prefs.setString('key-warm-up-time', warmupTime);
-      imageBuffer = root.findElements('imagebuffer').single.text;
-      widget.prefs.setString('key-image-buffer', imageBuffer);
-      imageMax = root.findElements('imagemax').single.text;
-      widget.prefs.setString('key-image-max', imageMax);
-      pixelFormat = root.findElements('pixelformat').single.text;
-      widget.prefs.setString('key-pixel-format', pixelFormat);
-      primarySerial = root.findElements('primaryserial').single.text;
-      widget.prefs.setString('key-primary-serial', primarySerial);
-      outputPath = root.findElements('outpath').single.text;
-      widget.prefs.setString('key-output-path', outputPath);
+        width = root.findElements('width').single.text;
+        widget.prefs.setString('key-width', width);
+        height = root.findElements('height').single.text;
+        widget.prefs.setString('key-height', height);
+        flip = root.findElements('flip').single.text == 'true';
+        widget.prefs.setBool('key-flip', flip);
+        fps = root.findElements('fps').single.text;
+        widget.prefs.setString('key-fps', fps);
+        exposureTime = root.findElements('exposuretime').single.text;
+        widget.prefs.setString('key-exposure-time', exposureTime);
+        warmupTime = root.findElements('warmuptime').single.text;
+        widget.prefs.setString('key-warm-up-time', warmupTime);
+        imageBuffer = root.findElements('imagebuffer').single.text;
+        widget.prefs.setString('key-image-buffer', imageBuffer);
+        imageMax = root.findElements('imagemax').single.text;
+        widget.prefs.setString('key-image-max', imageMax);
+        pixelFormat = root.findElements('pixelformat').single.text;
+        widget.prefs.setString('key-pixel-format', pixelFormat);
+        primarySerial = root.findElements('primaryserial').single.text;
+        widget.prefs.setString('key-primary-serial', primarySerial);
+        outputPath = root.findElements('outpath').single.text;
+        widget.prefs.setString('key-output-path', outputPath);
+      }
     });
 
 
