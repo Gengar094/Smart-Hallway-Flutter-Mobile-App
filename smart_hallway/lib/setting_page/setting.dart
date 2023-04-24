@@ -494,12 +494,12 @@ class _SettingPageState extends State<SettingPage> with WidgetsBindingObserver{
             ],
           ));
     } else {
-      setState(() async {
+      setState(() {
         var connected = widget.prefs.getBool('key-connected') ?? false;
         if (!connected) {
           // connect to server
           try {
-            await io.connect(
+            io.connect(
               ip: widget.prefs.getString('key-server-ip-address') ??
                   'localhost',
               port: int.parse(widget.prefs.getString('key-port') ?? '3000'),
