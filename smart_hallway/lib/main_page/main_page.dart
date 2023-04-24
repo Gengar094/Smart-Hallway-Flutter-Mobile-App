@@ -1,8 +1,6 @@
 import 'dart:io';
 
-import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:im_stepper/stepper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_hallway/main_page/info_container.dart';
