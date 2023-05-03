@@ -226,6 +226,7 @@ public class Server {
 
             while ((line = in.readLine()) != null) {
                 sb.append(line);
+                sb.append("\n");
             }
             System.out.println((sb.toString()));
             in.close();
