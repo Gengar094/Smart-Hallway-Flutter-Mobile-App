@@ -259,9 +259,9 @@ class _MainPageState extends State<MainPage> {
     if (!capture && !end) {
       return Text("Filming has not started ... ");
     } else if (capture && !end) {
-      return Text("Filming is in progress ... ");
+      return Text("Filming cameras are in preparation ... ");
     } else if (capture && end) {
-      return Text("Filming is waiting for the end ... ");
+      return Text("Filming is waiting for user to end ... ");
     }
 
     return Text("Something wrong ... ");

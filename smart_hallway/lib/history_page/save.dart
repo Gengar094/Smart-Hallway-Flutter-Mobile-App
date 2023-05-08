@@ -94,8 +94,28 @@ class _savedPageState extends State<savedPage> {
     return TextButton(
       onPressed: () {
         if (type == 'Delete') {
-          _remove(trialId);
-          widget.parentDelete(trialId);
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Warning'),
+                  content: Text('Are you sure you want to delete this item? You will not be able to find it later'),
+                  actions: [
+                    TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text('Cancel')),
+                    TextButton(
+                        onPressed: () {
+                          _remove(trialId);
+                          widget.parentDelete(trialId);
+                          Navigator.of(context).pop();
+                        },
+                        child: Text('Delete'))
+                  ],
+                );
+              });
         } else if (type == 'Unsave') {
           setState(() {
             _unsave(trialId);

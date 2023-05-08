@@ -178,7 +178,27 @@ class _HistoryPageState extends State<HistoryPage> {
     return TextButton(
       onPressed: () {
         if (type == 'Delete') {
-          _remove(trialId);
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                    title: Text('Warning'),
+                    content: Text('Are you sure you want to delete this item? You will not be able to find it later'),
+                    actions: [
+                      TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('Cancel')),
+                      TextButton(
+                          onPressed: () {
+                            _remove(trialId);
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('Delete'))
+                    ],
+                );
+              });
         } else if (type == 'Save') {
           setState(() {
             _save(trialId);
