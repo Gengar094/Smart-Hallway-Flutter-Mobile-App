@@ -1,3 +1,7 @@
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -60,6 +64,22 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    signingConfigs {
+        release {
+            keyAlias 'sign'  //别名
+            keyPassword 'Zyh&*(980110'
+            storeFile file('C:\\Users\\Yihao\\Desktop\\key\\key.jks')  //签名文件路径
+            storePassword 'Zyh&*(980110'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+
 }
 
 flutter {
